@@ -20,6 +20,20 @@ function updateDisplayValues(data) {
     const dryFanDisplay = document.querySelector('li:nth-child(3) .sensor-value');
     const wetFanDisplay = document.querySelector('li:nth-child(4) .sensor-value');
 
+    // Get control elements
+    const dryFanSlider = document.getElementById('dry-fan-slider');
+    const wetFanSlider = document.getElementById('wet-fan-slider');
+    const pumpButton = document.getElementById('pump-button');
+    const optimalSwitch = document.getElementById('optimal-switch');
+
+    // Check if optimal mode is enabled
+    const isOptimalMode = data.optimal === true;
+
+    // Disable/Enable controls based on optimal mode
+    dryFanSlider.disabled = isOptimalMode;
+    wetFanSlider.disabled = isOptimalMode;
+    pumpButton.disabled = isOptimalMode;
+
     // Update sensor values
     if (data.sensor1 !== undefined) {
         dryOutletValue.textContent = `${data.sensor1}°C`;
@@ -33,12 +47,10 @@ function updateDisplayValues(data) {
         dryFanDisplay.textContent = `${data['dry-fan']}%`;
         
         // Update slider values and background
-        const slider = document.getElementById('dry-fan-slider');
-        const valueDisplay = document.getElementById('dry-fan-value');
-        if (slider && valueDisplay) {
-            slider.value = data['dry-fan'];
-            valueDisplay.textContent = `${data['dry-fan']}%`;
-            updateSliderBackground(slider, data['dry-fan']);
+        if (dryFanSlider && document.getElementById('dry-fan-value')) {
+            dryFanSlider.value = data['dry-fan'];
+            document.getElementById('dry-fan-value').textContent = `${data['dry-fan']}%`;
+            updateSliderBackground(dryFanSlider, data['dry-fan']);
         }
     }
 
@@ -46,19 +58,27 @@ function updateDisplayValues(data) {
         wetFanDisplay.textContent = `${data['wet-fan']}%`;
         
         // Update slider values and background
-        const slider = document.getElementById('wet-fan-slider');
-        const valueDisplay = document.getElementById('wet-fan-value');
-        if (slider && valueDisplay) {
-            slider.value = data['wet-fan'];
-            valueDisplay.textContent = `${data['wet-fan']}%`;
-            updateSliderBackground(slider, data['wet-fan']);
+        if (wetFanSlider && document.getElementById('wet-fan-value')) {
+            wetFanSlider.value = data['wet-fan'];
+            document.getElementById('wet-fan-value').textContent = `${data['wet-fan']}%`;
+            updateSliderBackground(wetFanSlider, data['wet-fan']);
         }
     }
 
     // Update optimal switch state
-    const optimalSwitch = document.getElementById('optimal-switch');
     if (data.optimal !== undefined && optimalSwitch) {
         optimalSwitch.checked = data.optimal;
+    }
+
+    // Update pump button state
+    if (data.pump !== undefined && pumpButton) {
+        if (data.pump) {
+            pumpButton.classList.add('active');
+            pumpButton.querySelector('span').textContent = 'Pump On';
+        } else {
+            pumpButton.classList.remove('active');
+            pumpButton.querySelector('span').textContent = 'Pump Off';
+        }
     }
 }
 
@@ -78,13 +98,19 @@ function updateSliderBackground(slider, value) {
     slider.style.background = `linear-gradient(to right, var(--primary-color) 0%, var(--primary-color) ${percentage}%, #ddd ${percentage}%, #ddd 100%)`;
 }
 
-// Function to update optimal value in Firebase
-async function updateOptimalValue(value) {
+// Function to set optimal conditions
+async function setOptimalConditions(enabled) {
     try {
-        await set(ref(database, 'optimal'), value);
-        console.log(`Optimal mode ${value ? 'enabled' : 'disabled'}`);
+        if (enabled) {
+            // Set optimal values in Firebase
+            await set(ref(database, 'dry-fan'), 50);
+            await set(ref(database, 'wet-fan'), 50);
+            await set(ref(database, 'pump'), true);
+        }
+        // Set optimal mode state
+        await set(ref(database, 'optimal'), enabled);
     } catch (error) {
-        console.error('Error updating optimal mode:', error);
+        console.error('Error setting optimal conditions:', error);
     }
 }
 
@@ -110,18 +136,19 @@ async function updateOptimalValue(value) {
 const optimalSwitch = document.getElementById('optimal-switch');
 if (optimalSwitch) {
     optimalSwitch.addEventListener('change', (e) => {
-        updateOptimalValue(e.target.checked);
+        setOptimalConditions(e.target.checked);
     });
 }
 
-// Get pump switch element
-const pumpSwitch = document.getElementById('pump-switch');
+// Get pump button element
+const pumpButton = document.getElementById('pump-button');
 
-// Add event listener for pump switch
-pumpSwitch.addEventListener('change', async (e) => {
+// Add event listener for pump button
+pumpButton.addEventListener('click', async () => {
     try {
-        const pumpState = e.target.checked;
-        await set(ref(database, 'pump'), pumpState);
+        const currentState = pumpButton.classList.contains('active');
+        const newState = !currentState;
+        await set(ref(database, 'pump'), newState);
     } catch (error) {
         console.error('Error updating pump state:', error);
     }
@@ -130,7 +157,13 @@ pumpSwitch.addEventListener('change', async (e) => {
 // Listen for pump state changes
 onValue(ref(database, 'pump'), (snapshot) => {
     const pumpState = snapshot.val();
-    pumpSwitch.checked = pumpState;
+    if (pumpState) {
+        pumpButton.classList.add('active');
+        pumpButton.querySelector('span').textContent = 'Pump On';
+    } else {
+        pumpButton.classList.remove('active');
+        pumpButton.querySelector('span').textContent = 'Pump Off';
+    }
 });
 
 // Read data from Firebase
@@ -141,3 +174,17 @@ onValue(rootRef, (snapshot) => {
 }, (error) => {
     console.error('Error reading data:', error);
 });
+
+// Add CSS for disabled controls
+const style = document.createElement('style');
+style.textContent = `
+    input[type="range"]:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    .pump-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+`;
+document.head.appendChild(style);

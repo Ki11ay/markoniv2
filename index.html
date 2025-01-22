@@ -186,6 +186,16 @@
                 flex-direction: column;
             }
 
+            .controls-wrapper {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .optimal-control,
+            .pump-control {
+                width: 100%;
+            }
+
             .slider-container {
                 width: auto;
             }
@@ -205,18 +215,42 @@
                 font-size: 2em;
                 margin: 0.5em 0;
             }
+
+            .pump-button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        .controls-wrapper {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .optimal-control,
+        .pump-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 200px;
         }
 
         .optimal-control {
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 20px;
+            min-width: 200px;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
         }
 
         .switch-label {
             color: var(--text-color);
             font-weight: 500;
+            margin-right: auto;
         }
 
         /* The switch - the box around the slider */
@@ -278,16 +312,27 @@
             border-radius: 50%;
         }
 
-        .controls-wrapper {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .pump-control {
+        /* Pump button styles */
+        .pump-button {
+            background-color: #ccc;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
             display: flex;
             align-items: center;
             gap: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .pump-button.active {
+            background-color: var(--primary-color);
+        }
+
+        .pump-button i {
+            font-size: 1.2em;
         }
     </style>
 </head>
@@ -338,13 +383,10 @@
                     </label>
                     <span class="switch-label">Apply Optimal Conditions</span>
                 </div>
-                <div class="pump-control">
-                    <label class="switch">
-                        <input type="checkbox" id="pump-switch">
-                        <span class="slider round"></span>
-                    </label>
-                    <span class="switch-label">Pump Control</span>
-                </div>
+                <button id="pump-button" class="pump-button">
+                    <i class="fas fa-tint"></i>
+                    <span>Pump Off</span>
+                </button>
             </div>
             <div class="controls-container">
                 <div class="slider-container">
