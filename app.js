@@ -17,6 +17,7 @@ console.log("Firebase initialized successfully!");
 // Add these variables at the top with other declarations
 let isSystemConnected = false;
 let heartbeatChecker = null;
+let systemSettings = null;
 
 // Function to update display values
 function updateDisplayValues(data) {
@@ -57,6 +58,22 @@ function updateDisplayValues(data) {
     if (data.sensor1 !== undefined && data.sensor2 !== undefined) {
         const newDryOutlet = Number(data.sensor1);
         const newInlet = Number(data.sensor2);
+        
+        // Check temperature difference
+        const tempDifference = Math.abs(newInlet - newDryOutlet);
+        if (tempDifference > 10) {
+            console.log('Temperature difference exceeded 10°C:', tempDifference.toFixed(2));
+            console.log('Inlet:', newInlet, '°C, Outlet:', newDryOutlet, '°C');
+            stopAllSystems();
+            return;
+        }
+        
+        // Check temperature limit
+        if (systemSettings && newInlet > systemSettings.maxTemp) {
+            console.log('Temperature limit exceeded, applying optimal conditions');
+            console.log('Inlet temperature:', newInlet, '°C exceeded limit of', systemSettings.maxTemp, '°C');
+            applyOptimalConditions();
+        }
         
         // Check for valid temperature values (add reasonable bounds)
         if (isNaN(newDryOutlet) || isNaN(newInlet) || 
@@ -132,11 +149,21 @@ function updateSliderBackground(slider, value) {
 // Function to set optimal conditions
 async function setOptimalConditions(enabled) {
     try {
+        // Load latest settings if not already loaded
+        if (!systemSettings) {
+            await loadSettings();
+        }
+
         if (enabled) {
-            // Set optimal values in Firebase
-            await set(ref(database, 'dry-fan'), 50);
-            await set(ref(database, 'wet-fan'), 50);
-            await set(ref(database, 'pump'), true);
+            // Use values from settings
+            await set(ref(database, 'dry-fan'), systemSettings.optimalDryFan || 50);
+            await set(ref(database, 'wet-fan'), systemSettings.optimalWetFan || 50);
+            await set(ref(database, 'pump'), systemSettings.optimalPump || false);
+            console.log('Applied optimal conditions:', {
+                dryFan: systemSettings.optimalDryFan,
+                wetFan: systemSettings.optimalWetFan,
+                pump: systemSettings.optimalPump
+            });
         }
         // Set optimal mode state
         await set(ref(database, 'optimal'), enabled);
@@ -425,4 +452,63 @@ window.addEventListener('click', (event) => {
     if (event.target === modal) {
         modal.style.display = 'none';
     }
+});
+
+// Function to check if current time is within scheduled operation
+function isWithinScheduledTime() {
+    if (!systemSettings || !systemSettings.startTime || !systemSettings.endTime) {
+        return true; // If no schedule set, always return true
+    }
+
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes();
+    
+    const [startHour, startMinute] = systemSettings.startTime.split(':').map(Number);
+    const [endHour, endMinute] = systemSettings.endTime.split(':').map(Number);
+    
+    const startMinutes = startHour * 60 + startMinute;
+    const endMinutes = endHour * 60 + endMinute;
+    
+    return currentTime >= startMinutes && currentTime <= endMinutes;
+}
+
+// Function to apply optimal conditions
+async function applyOptimalConditions() {
+    if (!systemSettings) return;
+
+    try {
+        // Enable optimal mode which will trigger setOptimalConditions
+        await set(ref(database, 'optimal'), true);
+        console.log('Optimal mode enabled due to conditions');
+    } catch (error) {
+        console.error('Error applying optimal conditions:', error);
+    }
+}
+
+// Load settings and start schedule checker
+async function loadSettings() {
+    try {
+        const settingsRef = ref(database, 'settings');
+        const snapshot = await get(settingsRef);
+        systemSettings = snapshot.val() || {};
+        console.log('Settings loaded:', systemSettings);
+    } catch (error) {
+        console.error('Error loading settings:', error);
+    }
+}
+
+// Check schedule every minute
+setInterval(() => {
+    if (isWithinScheduledTime()) {
+        applyOptimalConditions();
+    }
+}, 60000);
+
+// Load settings when page loads
+loadSettings();
+
+// Add listener for settings changes
+onValue(ref(database, 'settings'), (snapshot) => {
+    systemSettings = snapshot.val() || {};
+    console.log('Settings updated:', systemSettings);
 });
