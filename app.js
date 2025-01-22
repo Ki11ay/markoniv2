@@ -1,6 +1,6 @@
 // Import Firebase modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { firebaseConfig } from './config.prod.js';
 
@@ -15,28 +15,11 @@ const rootRef = ref(database);
 console.log("Firebase initialized successfully!");
 
 // Add these variables at the top with other declarations
-let lastLoggedTemps = {
-    inlet: null,
-    dryOutlet: null,
-    lastUpdateTime: null
-};
-
-let sensorStatus = {
-    lastUpdate: null,
-    isConnected: false
-};
-
-// Add this variable with other declarations at the top
-let lastRealtimeUpdate = null;
+let isSystemConnected = false;
+let heartbeatChecker = null;
 
 // Function to update display values
 function updateDisplayValues(data) {
-    // Update sensor connection status
-    if (data.lastUpdate) {
-        sensorStatus.lastUpdate = new Date(data.lastUpdate);
-        sensorStatus.isConnected = true;
-    }
-
     // Update sensors
     const dryOutletValue = document.querySelector('li:nth-child(1) .sensor-value');
     const inletValue = document.querySelector('li:nth-child(2) .sensor-value');
@@ -49,18 +32,13 @@ function updateDisplayValues(data) {
     const pumpButton = document.getElementById('pump-button');
     const optimalSwitch = document.getElementById('optimal-switch');
 
-    // Check sensor connection
-    const currentTime = new Date();
-    const timeSinceLastUpdate = sensorStatus.lastUpdate ? 
-        (currentTime - sensorStatus.lastUpdate) / 1000 : null;
-
-    // If no update in last 30 seconds, mark as disconnected
-    if (!sensorStatus.lastUpdate || timeSinceLastUpdate > 30) {
-        sensorStatus.isConnected = false;
+    // Check if sensors are disconnected
+    if (!isSystemConnected) {
         dryOutletValue.textContent = 'Disconnected';
         inletValue.textContent = 'Disconnected';
         dryOutletValue.classList.add('disconnected');
         inletValue.classList.add('disconnected');
+        console.log('System marked as disconnected');
         return;
     } else {
         dryOutletValue.classList.remove('disconnected');
@@ -236,14 +214,45 @@ onValue(ref(database, 'pump'), (snapshot) => {
     }
 });
 
+// Function to check system connection status
+function checkSystemConnection() {
+    const isAliveRef = ref(database, 'isAlive');
+    get(isAliveRef).then((snapshot) => {
+        isSystemConnected = snapshot.val() === true;
+        if (!isSystemConnected) {
+            console.log('System disconnected');
+            updateDisplayValues({});  // Update UI to show disconnected state
+        }
+    }).catch((error) => {
+        console.error('Error checking system connection:', error);
+        isSystemConnected = false;
+        updateDisplayValues({});
+    });
+}
+
 // Modify the onValue listener for realtime database
 onValue(rootRef, (snapshot) => {
     console.log("Data received from Firebase:", snapshot.val());
     const data = snapshot.val();
-    lastRealtimeUpdate = new Date(); // Update timestamp when we get new data
     updateDisplayValues(data);
 }, (error) => {
     console.error('Error reading data:', error);
+});
+
+// Start heartbeat checker when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    // Check connection immediately
+    checkSystemConnection();
+    
+    // Then check every 30 seconds
+    heartbeatChecker = setInterval(checkSystemConnection, 30000);
+});
+
+// Clean up interval when page unloads
+window.addEventListener('beforeunload', () => {
+    if (heartbeatChecker) {
+        clearInterval(heartbeatChecker);
+    }
 });
 
 // Function to show modal with readings
@@ -321,7 +330,7 @@ async function calculateAverages() {
 async function logTemperatures(inlet, dryOutlet) {
     try {
         // Don't log if sensors are disconnected
-        if (!sensorStatus.isConnected) {
+        if (!isSystemConnected) {
             console.log('Sensors are disconnected - skipping log');
             return;
         }
