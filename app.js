@@ -1,7 +1,7 @@
 // Import Firebase modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-import { firebaseConfig } from './config.js';
+import { firebaseConfig } from './config.prod.js';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
