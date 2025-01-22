@@ -1,11 +1,13 @@
 // Import Firebase modules
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
 import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 import { firebaseConfig } from './config.prod.js';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
+const firestore = getFirestore(app);
 
 // Reference to the root of the database
 const rootRef = ref(database);
@@ -34,12 +36,13 @@ function updateDisplayValues(data) {
     wetFanSlider.disabled = isOptimalMode;
     pumpButton.disabled = isOptimalMode;
 
-    // Update sensor values
-    if (data.sensor1 !== undefined) {
+    // Update sensor values and log them
+    if (data.sensor1 !== undefined && data.sensor2 !== undefined) {
         dryOutletValue.textContent = `${data.sensor1}°C`;
-    }
-    if (data.sensor2 !== undefined) {
         inletValue.textContent = `${data.sensor2}°C`;
+        
+        // Log temperatures to Firestore
+        logTemperatures(data.sensor2, data.sensor1);
     }
 
     // Update fan values in the cards
@@ -174,6 +177,55 @@ onValue(rootRef, (snapshot) => {
 }, (error) => {
     console.error('Error reading data:', error);
 });
+
+// Function to calculate average of readings
+async function calculateAverages() {
+    try {
+        const tempCollection = collection(firestore, 'temp');
+        const q = query(tempCollection, orderBy('timestamp', 'desc'), limit(50));
+        const querySnapshot = await getDocs(q);
+        
+        let inletSum = 0;
+        let dryOutletSum = 0;
+        let count = 0;
+        
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            inletSum += data.inlet;
+            dryOutletSum += data.dryOutlet;
+            count++;
+        });
+        
+        const inletAvg = count > 0 ? (inletSum / count).toFixed(1) : 0;
+        const dryOutletAvg = count > 0 ? (dryOutletSum / count).toFixed(1) : 0;
+        
+        // Update averages display
+        document.getElementById('inlet-avg').textContent = `${inletAvg}°C`;
+        document.getElementById('dry-outlet-avg').textContent = `${dryOutletAvg}°C`;
+    } catch (error) {
+        console.error('Error calculating averages:', error);
+    }
+}
+
+// Function to log temperature readings
+async function logTemperatures(inlet, dryOutlet) {
+    try {
+        const tempCollection = collection(firestore, 'temp');
+        await addDoc(tempCollection, {
+            inlet: Number(inlet),
+            dryOutlet: Number(dryOutlet),
+            timestamp: new Date()
+        });
+        
+        // Calculate new averages after logging
+        await calculateAverages();
+    } catch (error) {
+        console.error('Error logging temperatures:', error);
+    }
+}
+
+// Calculate initial averages when the page loads
+calculateAverages();
 
 // Add CSS for disabled controls
 const style = document.createElement('style');
