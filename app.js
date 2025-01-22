@@ -114,6 +114,25 @@ if (optimalSwitch) {
     });
 }
 
+// Get pump switch element
+const pumpSwitch = document.getElementById('pump-switch');
+
+// Add event listener for pump switch
+pumpSwitch.addEventListener('change', async (e) => {
+    try {
+        const pumpState = e.target.checked;
+        await set(ref(database, 'pump'), pumpState);
+    } catch (error) {
+        console.error('Error updating pump state:', error);
+    }
+});
+
+// Listen for pump state changes
+onValue(ref(database, 'pump'), (snapshot) => {
+    const pumpState = snapshot.val();
+    pumpSwitch.checked = pumpState;
+});
+
 // Read data from Firebase
 onValue(rootRef, (snapshot) => {
     console.log("Data received from Firebase:", snapshot.val());
