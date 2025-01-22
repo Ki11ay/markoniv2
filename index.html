@@ -53,6 +53,7 @@
             color: var(--text-color);
             font-size: 1.5em;
             font-weight: 500;
+            text-align: center;
         }
 
         .controls-container {
@@ -70,6 +71,8 @@
             background: var(--background-color);
             border-radius: var(--border-radius);
             min-width: 200px;
+            justify-content: center;
+            text-align: center;
         }
 
         .slider-container label {
@@ -123,6 +126,7 @@
             text-align: center;
             font-weight: 500;
             white-space: nowrap;
+            min-width: 60px;
         }
 
         #data-list {
@@ -136,13 +140,19 @@
 
         #data-list li {
             background: var(--card-background);
-            padding: 20px;
+            padding: 15px 10px;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
             display: flex;
             justify-content: space-between;
             align-items: center;
             transition: transform 0.2s ease;
+            justify-content: center;
+            text-align: center;
+            min-height: 80px;
+            flex-direction: column;
+            gap: 10px;
+            cursor: pointer;
         }
 
         #data-list li:hover {
@@ -154,10 +164,20 @@
             font-weight: 500;
         }
 
+        .sensor-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
         .sensor-value {
             font-size: 1.2em;
             color: var(--secondary-color);
             font-weight: 500;
+            margin-left: 0;
         }
 
         .sensor-icon {
@@ -166,15 +186,15 @@
             margin-right: 10px;
         }
 
-        .sensor-info {
-            display: flex;
-            align-items: center;
-        }
-
         .fan-icon {
             font-size: 1.5em;
             color: var(--secondary-color);
             margin-right: 10px;
+        }
+
+        .sensor-value.disconnected {
+            color: #dc3545;
+            font-style: italic;
         }
 
         @media (max-width: 768px) {
@@ -201,7 +221,6 @@
             }
 
             #data-list {
-                display: grid;
                 grid-template-columns: repeat(2, 1fr);
                 gap: 10px;
             }
@@ -220,6 +239,63 @@
                 width: 100%;
                 justify-content: center;
             }
+
+            .controls-wrapper {
+                justify-content: center;
+            }
+
+            .slider-container {
+                flex-direction: column;
+                padding: 10px;
+            }
+
+            .value-display {
+                margin-top: 5px;
+            }
+
+            .averages-container {
+                padding: 10px;
+            }
+
+            .average-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #data-list {
+                grid-template-columns: 1fr;
+            }
+
+            .controls-container {
+                gap: 10px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .fan-control h2 {
+                font-size: 1.3em;
+            }
+
+            .controls-wrapper {
+                gap: 10px;
+            }
+
+            .optimal-control, 
+            .pump-control {
+                min-width: 150px;
+            }
+
+            .pump-button, 
+            .stop-button {
+                padding: 8px 15px;
+                min-width: 100px;
+            }
         }
 
         .controls-wrapper {
@@ -228,6 +304,7 @@
             margin-bottom: 20px;
             flex-wrap: wrap;
             gap: 15px;
+            text-align: center;
         }
 
         .optimal-control,
@@ -236,6 +313,7 @@
             align-items: center;
             gap: 10px;
             min-width: 200px;
+            justify-content: center;
         }
 
         .optimal-control {
@@ -245,12 +323,14 @@
             min-width: 200px;
             flex-direction: row-reverse;
             justify-content: flex-end;
+            justify-content: center;
         }
 
         .switch-label {
             color: var(--text-color);
             font-weight: 500;
             margin-right: auto;
+            text-align: center;
         }
 
         /* The switch - the box around the slider */
@@ -325,6 +405,9 @@
             align-items: center;
             gap: 10px;
             transition: background-color 0.3s ease;
+            justify-content: center;
+            min-width: 120px;
+            text-align: center;
         }
 
         .pump-button.active {
@@ -346,11 +429,147 @@
             margin-top: 0;
             margin-bottom: 10px;
             color: #333;
+            text-align: center;
         }
 
         .average-item {
             margin: 8px 0;
             font-size: 16px;
+            text-align: center;
+        }
+
+        .average-item span:first-child {
+            margin-right: 10px;
+        }
+
+        .stop-button {
+            background-color: #dc3545;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: background-color 0.3s ease;
+            justify-content: center;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .stop-button:hover {
+            background-color: #c82333;
+        }
+
+        .stop-button i {
+            font-size: 1.2em;
+        }
+
+        .inlet-icon {
+            color: #dc3545 !important;
+        }
+
+        .stop-button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .stop-button {
+            width: 200px;
+        }
+
+        @media (max-width: 480px) {
+            .stop-button-container {
+                margin-top: 15px;
+                padding-top: 15px;
+            }
+            
+            .stop-button {
+                width: 100%;
+            }
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: var(--card-background);
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            width: 80%;
+            max-width: 500px;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .close-modal {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: var(--text-color);
+        }
+
+        .readings-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        .reading-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .reading-item:last-child {
+            border-bottom: none;
+        }
+
+        .modal-average {
+            text-align: center;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            font-size: 1.2em;
+        }
+
+        @media (max-width: 480px) {
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
         }
     </style>
 </head>
@@ -369,7 +588,7 @@
             </li>
             <li>
                 <div class="sensor-info">
-                    <i class="fas fa-thermometer-half sensor-icon"></i>
+                    <i class="fas fa-thermometer-half sensor-icon inlet-icon"></i>
                     <strong>Inlet</strong>
                 </div>
                 <span class="sensor-value">--°C</span>
@@ -404,7 +623,7 @@
         </div>
 
         <div class="fan-control">
-            <h2>Fan Controls</h2>
+            <h2>System Controls</h2>
             <div class="controls-wrapper">
                 <div class="optimal-control">
                     <label class="switch">
@@ -428,6 +647,30 @@
                     <label for="wet-fan-slider">Wet Fan</label>
                     <input type="range" id="wet-fan-slider" min="0" max="100" value="0">
                     <span id="wet-fan-value" class="value-display">0%</span>
+                </div>
+            </div>
+            <div class="stop-button-container">
+                <button id="stop-button" class="stop-button">
+                    <i class="fas fa-stop"></i>
+                    <span>Stop All</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="readings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Temperature Readings</h2>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="readings-list" id="readings-list">
+                    <!-- Readings will be inserted here -->
+                </div>
+                <div class="modal-average">
+                    <strong>Average: </strong>
+                    <span id="modal-average">-°C</span>
                 </div>
             </div>
         </div>
