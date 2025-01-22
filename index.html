@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markoni</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #2196F3;
+            --background-color: #f5f7fa;
+            --card-background: #ffffff;
+            --text-color: #2c3e50;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 2.5em;
+            margin: 1em 0;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .dashboard {
+            margin-bottom: 30px;
+        }
+
+        .fan-control {
+            background: var(--card-background);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        .fan-control h2 {
+            margin: 0 0 20px 0;
+            color: var(--text-color);
+            font-size: 1.5em;
+            font-weight: 500;
+        }
+
+        .controls-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: nowrap;
+        }
+
+        .slider-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: var(--background-color);
+            border-radius: var(--border-radius);
+            min-width: 200px;
+        }
+
+        .slider-container label {
+            width: 80px;
+            font-weight: 500;
+            color: var(--text-color);
+            white-space: nowrap;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            min-width: 100px;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all .2s ease-in-out;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+        }
+
+        .value-display {
+            width: 60px;
+            padding: 5px 10px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 15px;
+            text-align: center;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        #data-list {
+            list-style-type: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            padding-bottom: 10px;
+        }
+
+        #data-list li {
+            background: var(--card-background);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s ease;
+        }
+
+        #data-list li:hover {
+            transform: translateY(-2px);
+        }
+
+        #data-list li strong {
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        .sensor-value {
+            font-size: 1.2em;
+            color: var(--secondary-color);
+            font-weight: 500;
+        }
+
+        .sensor-icon {
+            font-size: 1.5em;
+            color: var(--primary-color);
+            margin-right: 10px;
+        }
+
+        .sensor-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .fan-icon {
+            font-size: 1.5em;
+            color: var(--secondary-color);
+            margin-right: 10px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .controls-container {
+                flex-direction: column;
+            }
+
+            .slider-container {
+                width: auto;
+            }
+
+            #data-list {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            #data-list li {
+                min-width: 0;
+                width: auto;
+            }
+
+            h1 {
+                font-size: 2em;
+                margin: 0.5em 0;
+            }
+        }
+
+        .optimal-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .switch-label {
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        /* The switch - the box around the slider */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        /* Hide default HTML checkbox */
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        /* The slider */
+        .switch .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+        }
+
+        .switch .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+        }
+
+        .switch input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        .switch input:focus + .slider {
+            box-shadow: 0 0 1px var(--primary-color);
+        }
+
+        .switch input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Rounded sliders */
+        .switch .slider.round {
+            border-radius: 34px;
+        }
+
+        .switch .slider.round:before {
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Markoni</h1>
+    
+    <div class="dashboard">
+        <ul id="data-list">
+            <!-- Sensors row -->
+            <li>
+                <div class="sensor-info">
+                    <i class="fas fa-thermometer-half sensor-icon"></i>
+                    <strong>Dry Outlet</strong>
+                </div>
+                <span class="sensor-value">--°C</span>
+            </li>
+            <li>
+                <div class="sensor-info">
+                    <i class="fas fa-thermometer-half sensor-icon"></i>
+                    <strong>Inlet</strong>
+                </div>
+                <span class="sensor-value">--°C</span>
+            </li>
+            <!-- Fans row -->
+            <li>
+                <div class="sensor-info">
+                    <i class="fas fa-fan fan-icon"></i>
+                    <strong>Dry Fan</strong>
+                </div>
+                <span class="sensor-value">--%</span>
+            </li>
+            <li>
+                <div class="sensor-info">
+                    <i class="fas fa-fan fan-icon"></i>
+                    <strong>Wet Fan</strong>
+                </div>
+                <span class="sensor-value">--%</span>
+            </li>
+        </ul>
+
+        <div class="fan-control">
+            <h2>Fan Controls</h2>
+            <div class="optimal-control">
+                <label class="switch">
+                    <input type="checkbox" id="optimal-switch">
+                    <span class="slider round"></span>
+                </label>
+                <span class="switch-label">Apply Optimal Conditions</span>
+            </div>
+            <div class="controls-container">
+                <div class="slider-container">
+                    <label for="dry-fan-slider">Dry Fan</label>
+                    <input type="range" id="dry-fan-slider" min="0" max="100" value="0">
+                    <span id="dry-fan-value" class="value-display">0%</span>
+                </div>
+                <div class="slider-container">
+                    <label for="wet-fan-slider">Wet Fan</label>
+                    <input type="range" id="wet-fan-slider" min="0" max="100" value="0">
+                    <span id="wet-fan-value" class="value-display">0%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="config.js"></script>
+    <script type="module" src="app.js"></script>
+</body>
+</html> 
