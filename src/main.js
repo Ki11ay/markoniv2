@@ -1,7 +1,8 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
-import './style.css';
+import './styles/theme.css';
+import './styles/animations.css';
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
@@ -28,12 +29,6 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-console.log('Initializing Firebase with config:', {
-  hasConfig: !!firebaseConfig.apiKey,
-  authDomain: firebaseConfig.authDomain,
-  databaseURL: firebaseConfig.databaseURL
-});
-
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const database = getDatabase(firebaseApp);
@@ -48,6 +43,16 @@ app.use(router);
 app.config.errorHandler = (err, vm, info) => {
   console.error('Global error:', err);
   console.error('Error info:', info);
+};
+
+// Global properties
+app.config.globalProperties.$formatDate = (date) => {
+  return new Date(date).toLocaleString('en-US', {
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
 };
 
 // Provide Firebase instances to all components

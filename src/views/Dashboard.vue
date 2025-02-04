@@ -1,43 +1,60 @@
 <template>
-  <div class="dashboard">
+  <div class="dashboard container">
     <header class="header">
-      <h1>AC Control Dashboard</h1>
-      <div class="header-actions">
-        <button class="settings-button" @click="$router.push('/settings')">
-          <i class="fas fa-cog"></i>
-          Settings
-        </button>
-        <button class="logout-button" @click="handleLogout">
-          <i class="fas fa-sign-out-alt"></i>
-          Logout
-        </button>
+      <div class="header-content">
+        <div class="header-title">
+          <h1>AC Control Dashboard</h1>
+          <connection-status :is-connected="systemState.isSystemConnected" />
+        </div>
+        <div class="header-actions">
+          <button class="settings-button hover-lift ripple" @click="$router.push('/settings')">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </button>
+          <button class="logout-button hover-lift ripple" @click="handleLogout">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+          </button>
+        </div>
       </div>
     </header>
 
     <div class="status-cards">
-      <div class="status-card" :class="{ disconnected: !systemState.isSystemConnected }">
+      <div 
+        class="status-card cold-temp" 
+        :class="{ disconnected: !systemState.isSystemConnected }"
+      >
         <div class="sensor-info">
           <i class="fas fa-thermometer-half"></i>
-          <h3>Dry Outlet</h3>
+          <h3>Cold Air (Outlet)</h3>
         </div>
         <div class="sensor-value">
           {{ systemState.dryOutletTemp?.toFixed(2) || '--' }}°C
+          <span class="trend-indicator">
+            <i class="fas fa-arrow-down"></i>
+          </span>
         </div>
       </div>
 
-      <div class="status-card" :class="{ disconnected: !systemState.isSystemConnected }">
+      <div 
+        class="status-card hot-temp" 
+        :class="{ disconnected: !systemState.isSystemConnected }"
+      >
         <div class="sensor-info">
-          <i class="fas fa-thermometer-half"></i>
-          <h3>Inlet</h3>
+          <i class="fas fa-thermometer-full"></i>
+          <h3>Hot Air (Inlet)</h3>
         </div>
         <div class="sensor-value">
           {{ systemState.inletTemp?.toFixed(2) || '--' }}°C
+          <span class="trend-indicator">
+            <i class="fas fa-arrow-up"></i>
+          </span>
         </div>
       </div>
 
       <div class="status-card">
         <div class="sensor-info">
-          <i class="fas fa-fan"></i>
+          <i class="fas fa-fan fa-spin"></i>
           <h3>Dry Fan</h3>
         </div>
         <div class="sensor-value">{{ systemState.dryFanSpeed }}%</div>
@@ -45,7 +62,7 @@
 
       <div class="status-card">
         <div class="sensor-info">
-          <i class="fas fa-fan"></i>
+          <i class="fas fa-fan fa-spin"></i>
           <h3>Wet Fan</h3>
         </div>
         <div class="sensor-value">{{ systemState.wetFanSpeed }}%</div>
@@ -53,134 +70,191 @@
     </div>
 
     <div class="controls-section card">
+      <loading-spinner 
+        :loading="isSyncing" 
+        message="Updating controls..." 
+        :contained="true" 
+      />
+      
       <h2>System Controls</h2>
       
       <div class="fan-controls">
-        <div class="control-group">
-          <label>Dry Fan Speed</label>
-          <input 
-            type="range" 
-            v-model.number="dryFanSpeed" 
-            @change="updateDryFan"
-            :disabled="systemState.isOptimalMode"
-            min="0"
-            max="100"
-          />
-          <span class="value-display">{{ dryFanSpeed }}%</span>
-        </div>
+        <custom-slider
+          v-model="localDryFanSpeed"
+          :target-value="systemState.dryFanSpeed"
+          label="Dry Fan Speed"
+          id="dry-fan"
+          @update:modelValue="handleDryFanInput"
+          @change="updateDryFan"
+          :disabled="systemState.isOptimalMode || isSyncing"
+        />
 
-        <div class="control-group">
-          <label>Wet Fan Speed</label>
-          <input 
-            type="range" 
-            v-model.number="wetFanSpeed" 
-            @change="updateWetFan"
-            :disabled="systemState.isOptimalMode"
-            min="0"
-            max="100"
-          />
-          <span class="value-display">{{ wetFanSpeed }}%</span>
-        </div>
+        <custom-slider
+          v-model="localWetFanSpeed"
+          :target-value="systemState.wetFanSpeed"
+          label="Wet Fan Speed"
+          id="wet-fan"
+          @update:modelValue="handleWetFanInput"
+          @change="updateWetFan"
+          :disabled="systemState.isOptimalMode || isSyncing"
+        />
       </div>
 
       <div class="action-buttons">
         <button 
-          class="pump-button"
+          class="pump-button ripple hover-lift"
           :class="{ active: systemState.isPumpActive }"
           @click="togglePump"
-          :disabled="systemState.isOptimalMode"
+          :disabled="systemState.isOptimalMode || isSyncing"
         >
           <i class="fas fa-tint"></i>
-          {{ systemState.isPumpActive ? 'Pump On' : 'Pump Off' }}
+          <span>{{ systemState.isPumpActive ? 'Pump On' : 'Pump Off' }}</span>
         </button>
 
         <button 
-          class="optimal-button"
+          class="optimal-button ripple hover-lift"
           :class="{ active: systemState.isOptimalMode }"
           @click="toggleOptimalMode"
+          :disabled="isSyncing"
         >
           <i class="fas fa-magic"></i>
-          {{ systemState.isOptimalMode ? 'Optimal Mode On' : 'Optimal Mode Off' }}
+          <span>{{ systemState.isOptimalMode ? 'Optimal Mode On' : 'Optimal Mode Off' }}</span>
         </button>
 
-        <button class="stop-button" @click="handleEmergencyStop">
+        <button 
+          class="stop-button ripple hover-lift" 
+          @click="handleEmergencyStop"
+          :disabled="isSyncing"
+        >
           <i class="fas fa-stop"></i>
-          Emergency Stop
+          <span>Emergency Stop</span>
         </button>
       </div>
     </div>
 
     <div class="temperature-history card">
-      <h2>Temperature History</h2>
+      <div class="history-header">
+        <h2>Temperature History</h2>
+        <button 
+          class="export-button hover-lift ripple"
+          @click="exportTemperatureLog"
+          :disabled="!temperatureLog.length"
+          title="Export temperature log to CSV"
+        >
+          <i class="fas fa-download"></i>
+          <span>Export Data</span>
+        </button>
+      </div>
       <div class="chart-container">
-        <line-chart :data="chartData" :options="chartOptions" />
+        <temperature-chart :temperature-log="temperatureLog" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { Line as LineChart } from 'vue-chartjs';
+import { ref, onMounted, watch } from 'vue';
+import ConnectionStatus from '../components/ConnectionStatus.vue';
+import LoadingSpinner from '../components/LoadingSpinner.vue';
+import CustomSlider from '../components/CustomSlider.vue';
 import { useSystemControl } from '../composables/useSystemControl';
 import { useFirebase } from '../composables/useFirebase';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import TemperatureChart from '../components/TemperatureChart.vue';
+import { convertToCSV, downloadCSV, generateTimestampedFilename } from '../utils/csvExport';
 
-// Register ChartJS components
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
-
-const { systemState, setFanSpeed, togglePump: togglePumpState, setOptimalMode, emergencyStop } = useSystemControl();
+const { systemState, temperatureLog, setFanSpeed, togglePump: togglePumpState, setOptimalMode, emergencyStop } = useSystemControl();
 const { logoutUser } = useFirebase();
 
-// Local state
-const dryFanSpeed = ref(systemState.value.dryFanSpeed);
-const wetFanSpeed = ref(systemState.value.wetFanSpeed);
+// Local state for fan speeds
+const localDryFanSpeed = ref(systemState.value.dryFanSpeed);
+const localWetFanSpeed = ref(systemState.value.wetFanSpeed);
+const isSyncing = ref(false);
 
-// Methods
-const updateDryFan = () => setFanSpeed('dry', dryFanSpeed.value);
-const updateWetFan = () => setFanSpeed('wet', wetFanSpeed.value);
-const togglePump = () => togglePumpState();
-const toggleOptimalMode = () => setOptimalMode(!systemState.value.isOptimalMode);
-const handleEmergencyStop = () => emergencyStop();
-const handleLogout = () => logoutUser();
+// Watch for system state changes
+watch(() => systemState.value.dryFanSpeed, (newSpeed) => {
+  if (!isSyncing.value) {
+    localDryFanSpeed.value = newSpeed;
+  }
+});
 
-// Chart data
-const chartData = computed(() => ({
-  labels: ['12:00', '12:05', '12:10', '12:15', '12:20'], // Replace with actual timestamps
-  datasets: [
-    {
-      label: 'Inlet Temperature',
-      borderColor: '#e74c3c',
-      data: [25, 26, 25.5, 25.8, 26.2], // Replace with actual temperature data
-      tension: 0.4
-    },
-    {
-      label: 'Dry Outlet Temperature',
-      borderColor: '#3498db',
-      data: [22, 23, 22.5, 22.8, 23.2], // Replace with actual temperature data
-      tension: 0.4
-    }
-  ]
-}));
+watch(() => systemState.value.wetFanSpeed, (newSpeed) => {
+  if (!isSyncing.value) {
+    localWetFanSpeed.value = newSpeed;
+  }
+});
 
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    y: {
-      beginAtZero: false,
-      title: {
-        display: true,
-        text: 'Temperature (°C)'
-      }
-    }
+// Methods for handling fan speed changes
+const handleDryFanInput = (value) => {
+  localDryFanSpeed.value = value;
+  // Don't update Firebase on every input change
+};
+
+const handleWetFanInput = (value) => {
+  localWetFanSpeed.value = value;
+  // Don't update Firebase on every input change
+};
+
+const updateDryFan = async (value) => {
+  isSyncing.value = true;
+  try {
+    await setFanSpeed('dry', value);
+    localDryFanSpeed.value = value; // Update local value after successful Firebase update
+  } catch (error) {
+    console.error('Failed to update dry fan:', error);
+    // Revert to previous value on error
+    localDryFanSpeed.value = systemState.value.dryFanSpeed;
+  } finally {
+    isSyncing.value = false;
   }
 };
 
-// Update fan speed displays when system state changes
+const updateWetFan = async (value) => {
+  isSyncing.value = true;
+  try {
+    await setFanSpeed('wet', value);
+    localWetFanSpeed.value = value; // Update local value after successful Firebase update
+  } catch (error) {
+    console.error('Failed to update wet fan:', error);
+    // Revert to previous value on error
+    localWetFanSpeed.value = systemState.value.wetFanSpeed;
+  } finally {
+    isSyncing.value = false;
+  }
+};
+
+// Other control methods
+const togglePump = async () => {
+  isSyncing.value = true;
+  await togglePumpState();
+  isSyncing.value = false;
+};
+
+const toggleOptimalMode = async () => {
+  isSyncing.value = true;
+  await setOptimalMode(!systemState.value.isOptimalMode);
+  isSyncing.value = false;
+};
+
+const handleEmergencyStop = async () => {
+  isSyncing.value = true;
+  await emergencyStop();
+  isSyncing.value = false;
+};
+
+const handleLogout = () => logoutUser();
+
+const exportTemperatureLog = () => {
+  if (!temperatureLog.value.length) return;
+  
+  const csvContent = convertToCSV(temperatureLog.value);
+  const filename = generateTimestampedFilename();
+  downloadCSV(csvContent, filename);
+};
+
+// Initialize fan speeds when component mounts
 onMounted(() => {
-  dryFanSpeed.value = systemState.value.dryFanSpeed;
-  wetFanSpeed.value = systemState.value.wetFanSpeed;
+  localDryFanSpeed.value = systemState.value.dryFanSpeed;
+  localWetFanSpeed.value = systemState.value.wetFanSpeed;
 });
 </script>
 
@@ -188,148 +262,284 @@ onMounted(() => {
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: var(--space-8);
+  padding: var(--space-4);
+  min-height: 100vh;
+  background-color: var(--background);
 }
 
 .header {
+  margin-bottom: var(--space-4);
+}
+
+.header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  gap: var(--space-4);
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
 }
 
 .header-actions {
   display: flex;
-  gap: 1rem;
+  gap: var(--space-2);
 }
 
 .settings-button {
-  background-color: var(--secondary-color);
+  background: var(--secondary);
   color: white;
 }
 
 .logout-button {
-  background-color: var(--danger-color);
+  background: var(--danger);
   color: white;
 }
 
 .status-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
 }
 
 .status-card {
-  padding: 1.5rem;
-  border-radius: var(--border-radius);
+  padding: var(--space-6);
+  border-radius: var(--radius);
   background: var(--card-background);
   box-shadow: var(--shadow);
   text-align: center;
+  transition: var(--transition);
 }
 
-.status-card.disconnected .sensor-value {
-  color: var(--danger-color);
+.status-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.status-card.disconnected {
+  opacity: 0.7;
+  border: 2px solid var(--danger);
 }
 
 .sensor-info {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
 }
 
 .sensor-info i {
-  font-size: 1.5rem;
-  color: var(--secondary-color);
+  font-size: 2rem;
+}
+
+.hot-temp {
+  background: linear-gradient(135deg, #ffffff 0%, #fff5f5 100%);
+}
+
+.hot-temp .sensor-info i,
+.hot-temp .trend-indicator {
+  color: var(--danger);
+}
+
+.cold-temp {
+  background: linear-gradient(135deg, #ffffff 0%, #f5f9ff 100%);
+}
+
+.cold-temp .sensor-info i,
+.cold-temp .trend-indicator {
+  color: var(--primary);
+}
+
+.trend-indicator {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.5rem;
+  font-size: 1rem;
+}
+
+.sensor-info h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
 .sensor-value {
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 600;
-  color: var(--text-color);
+  color: var(--text-primary);
+  transition: var(--transition);
 }
 
 .controls-section {
-  padding: 2rem;
+  padding: var(--space-8);
+  position: relative;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-6) 0;
 }
 
 .fan-controls {
   display: grid;
-  gap: 2rem;
-  margin: 2rem 0;
-}
-
-.control-group {
-  display: grid;
-  grid-template-columns: 120px 1fr 60px;
-  align-items: center;
-  gap: 1rem;
-}
-
-.value-display {
-  text-align: center;
-  background: var(--primary-color);
-  color: white;
-  padding: 0.4rem;
-  border-radius: 20px;
-  font-weight: 500;
+  gap: var(--space-8);
+  margin-bottom: var(--space-8);
 }
 
 .action-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: var(--space-4);
   justify-content: center;
-  margin-top: 2rem;
+}
+
+button {
+  padding: var(--space-3) var(--space-6);
+  font-size: 1rem;
+}
+
+button i {
+  font-size: 1.1rem;
 }
 
 .pump-button {
-  background-color: #9b59b6;
+  background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
   color: white;
 }
 
 .pump-button.active {
-  background-color: #8e44ad;
+  animation: pulse 2s infinite;
 }
 
 .optimal-button {
-  background-color: var(--primary-color);
+  background: var(--primary-gradient);
   color: white;
 }
 
 .optimal-button.active {
-  background-color: #27ae60;
+  background: var(--success-gradient);
+  animation: pulse 2s infinite;
 }
 
 .stop-button {
-  background-color: var(--danger-color);
+  background: var(--danger-gradient);
   color: white;
 }
 
 .temperature-history {
-  padding: 2rem;
+  padding: var(--space-8);
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-6);
+}
+
+.export-button {
+  background: var(--secondary);
+  color: white;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.export-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.export-button i {
+  font-size: 1rem;
 }
 
 .chart-container {
   height: 400px;
-  margin-top: 1rem;
+  margin-top: var(--space-6);
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-inner);
+}
+
+.relative {
+  position: relative;
 }
 
 @media (max-width: 768px) {
-  .header {
+  .header-content {
     flex-direction: column;
-    gap: 1rem;
     text-align: center;
   }
 
-  .control-group {
-    grid-template-columns: 1fr;
-    text-align: center;
+  .header-title {
+    flex-direction: column;
+    gap: var(--space-2);
   }
 
   .action-buttons {
     flex-direction: column;
+  }
+
+  button {
+    width: 100%;
+  }
+
+  .controls-section {
+    padding: var(--space-4);
+  }
+
+  .temperature-history {
+    padding: var(--space-4);
+  }
+}
+
+/* Animations */
+.fa-spin {
+  animation: fa-spin 2s linear infinite;
+}
+
+@keyframes fa-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.2);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
   }
 }
 </style>
