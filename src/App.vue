@@ -1,90 +1,119 @@
 <template>
-  <div class="app-container">
-    <div v-if="initializing" class="loading-screen">
-      <div class="loader"></div>
-      <p>Loading...</p>
-    </div>
-    <router-view v-else v-slot="{ Component }">
-      <transition name="fade" mode="out-in">
-        <component :is="Component" />
-      </transition>
-    </router-view>
+  <div 
+    class="app-wrapper"
+    :data-theme="theme"
+  >
+    <Transition 
+      name="fade"
+      mode="out-in"
+    >
+      <router-view></router-view>
+    </Transition>
+
+    <button 
+      class="theme-toggle ripple hover-lift"
+      @click="toggleTheme"
+      v-if="$route.name !== 'login'"
+      :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+    >
+      <i :class="theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'"></i>
+    </button>
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useFirebase } from './composables/useFirebase';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
-const { user, isAuthenticated } = useFirebase();
+const theme = ref(localStorage.getItem('theme') || 'light');
 const router = useRouter();
-const initializing = ref(true);
-const auth = getAuth();
 
+const toggleTheme = () => {
+  theme.value = theme.value === 'light' ? 'dark' : 'light';
+  localStorage.setItem('theme', theme.value);
+};
+
+// Watch for system theme changes
 onMounted(() => {
-  // Listen for auth state changes
-  onAuthStateChanged(auth, (user) => {
-    console.log('Auth state changed:', user ? 'authenticated' : 'not authenticated');
-    if (!user && router.currentRoute.value.meta.requiresAuth) {
-      router.push('/login');
+  const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+  
+  if (!localStorage.getItem('theme')) {
+    theme.value = systemDark.matches ? 'dark' : 'light';
+    localStorage.setItem('theme', theme.value);
+  }
+
+  systemDark.addEventListener('change', (e) => {
+    if (!localStorage.getItem('theme')) {
+      theme.value = e.matches ? 'dark' : 'light';
+      localStorage.setItem('theme', theme.value);
     }
-    initializing.value = false;
   });
+});
+
+// Watch route changes for page transitions
+watch(() => router.currentRoute.value.name, (newRoute, oldRoute) => {
+  if (newRoute !== oldRoute) {
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => {
+      document.body.style.overflow = '';
+    }, 300); // Match transition duration
+  }
 });
 </script>
 
-<style scoped>
-.loading-screen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: var(--background-color);
-  z-index: 1000;
+<style>
+.app-wrapper {
+  min-height: 100vh;
+  min-width: 100vw;
 }
 
-.loader {
+/* Theme Toggle Button */
+.theme-toggle {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-6);
   width: 48px;
   height: 48px;
-  border: 5px solid var(--primary-color);
-  border-bottom-color: transparent;
-  border-radius: 50%;
-  display: inline-block;
-  box-sizing: border-box;
-  animation: rotation 1s linear infinite;
-  margin-bottom: 1rem;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: var(--z-50);
+  transition: var(--transition);
 }
 
-@keyframes rotation {
-  0% {
-    transform: rotate(0deg);
+.theme-toggle i {
+  font-size: 1.25rem;
+  transition: transform var(--transition);
+}
+
+.theme-toggle:hover i {
+  transform: rotate(15deg) scale(1.1);
+}
+
+[data-theme="dark"] .theme-toggle:hover i {
+  transform: rotate(-15deg) scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .theme-toggle {
+    bottom: var(--space-4);
+    right: var(--space-4);
+    width: 40px;
+    height: 40px;
   }
-  100% {
-    transform: rotate(360deg);
+
+  .theme-toggle i {
+    font-size: 1rem;
   }
 }
 
-</style>
-
-<style>
-:root {
-  --primary-color: #2ecc71;
-  --secondary-color: #3498db;
-  --danger-color: #e74c3c;
-  --background-color: #f8f9fa;
-  --card-background: #ffffff;
-  --text-color: #2c3e50;
-  --border-radius: 12px;
-  --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
+/* Global Styles */
 * {
   margin: 0;
   padding: 0;
@@ -93,78 +122,44 @@ onMounted(() => {
 
 body {
   font-family: 'Poppins', sans-serif;
-  background-color: var(--background-color);
-  color: var(--text-color);
-  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--transition), color var(--transition);
 }
 
-.app-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  min-height: 100vh;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
+/* Reset button styles */
 button {
-  cursor: pointer;
-  border: none;
-  padding: 0.8rem 1.5rem;
-  border-radius: var(--border-radius);
-  font-weight: 500;
-  transition: all 0.2s ease;
+  font-family: inherit;
 }
 
-button:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-input {
-  width: 100%;
-  padding: 0.8rem;
-  border: 1px solid #ddd;
-  border-radius: var(--border-radius);
-  font-size: 1rem;
-  transition: border-color 0.2s ease;
-}
-
-input:focus {
+/* Reset input styles */
+input, button {
   outline: none;
-  border-color: var(--primary-color);
 }
 
-.card {
-  background: var(--card-background);
-  padding: 1.5rem;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow);
+/* Selection color */
+::selection {
+  background: var(--primary);
+  color: white;
 }
 
-.error-text {
-  color: var(--danger-color);
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
 
-@media (max-width: 768px) {
-  .app-container {
-    padding: 10px;
-  }
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--surface);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-dark);
 }
 </style>
