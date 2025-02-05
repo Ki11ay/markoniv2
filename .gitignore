@@ -49,7 +49,6 @@ firestore-debug.log
 database-debug.log
 ui-debug.log
 config.prod.js
-src/firebase-config.js
 
 # Testing
 coverage
