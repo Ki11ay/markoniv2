@@ -16,22 +16,23 @@ link.rel = 'stylesheet';
 link.href = 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap';
 document.head.appendChild(link);
 
-// Firebase configuration from environment variables
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
-};
+// Import Firebase configuration and test data initializer
+import { firebaseConfig } from './firebase-config';
+import { initializeTestData } from './utils/initializeTestData';
 
 // Initialize Firebase
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const database = getDatabase(firebaseApp);
+
+// Initialize test data in development mode
+if (import.meta.env.DEV) {
+  initializeTestData(firebaseApp).then(success => {
+    if (success) {
+      console.log('Development test data initialized');
+    }
+  });
+}
 
 // Create and mount the Vue application
 const app = createApp(App);

@@ -132,6 +132,27 @@
       </div>
     </div>
 
+    <div class="psychrometric-section card">
+      <psychrometric-chart
+        :inlet-temp="systemState.inletTemp"
+        :outlet-temp="systemState.dryOutletTemp"
+        :inlet-humidity="systemState.intakeHumidity"
+        :outlet-humidity="systemState.outtakeHumidity"
+        :inlet-dew-point="systemState.inletDewPoint"
+        :outlet-dew-point="systemState.outletDewPoint"
+        :inlet-wet-bulb="systemState.inletWetBulb"
+        :outlet-wet-bulb="systemState.outletWetBulb"
+        :inlet-enthalpy="systemState.inletEnthalpy"
+        :outlet-enthalpy="systemState.outletEnthalpy"
+        :cop="systemState.cop"
+        :cooling-effect="systemState.coolingEffect"
+        :power-consumption="systemState.powerConsumption"
+        :mass-flow-rate="systemState.massFlowRate"
+        :effectiveness="systemState.effectiveness"
+        :temperatures="systemState.temperatures"
+      />
+    </div>
+
     <div class="temperature-history card">
       <div class="history-header">
         <h2>Temperature History</h2>
@@ -160,6 +181,7 @@ import CustomSlider from '../components/CustomSlider.vue';
 import { useSystemControl } from '../composables/useSystemControl';
 import { useFirebase } from '../composables/useFirebase';
 import TemperatureChart from '../components/TemperatureChart.vue';
+import PsychrometricChart from '../components/PsychrometricChart.vue';
 import { convertToCSV, downloadCSV, generateTimestampedFilename } from '../utils/csvExport';
 
 const { systemState, temperatureLog, setFanSpeed, togglePump: togglePumpState, setOptimalMode, emergencyStop } = useSystemControl();
@@ -186,22 +208,19 @@ watch(() => systemState.value.wetFanSpeed, (newSpeed) => {
 // Methods for handling fan speed changes
 const handleDryFanInput = (value) => {
   localDryFanSpeed.value = value;
-  // Don't update Firebase on every input change
 };
 
 const handleWetFanInput = (value) => {
   localWetFanSpeed.value = value;
-  // Don't update Firebase on every input change
 };
 
 const updateDryFan = async (value) => {
   isSyncing.value = true;
   try {
     await setFanSpeed('dry', value);
-    localDryFanSpeed.value = value; // Update local value after successful Firebase update
+    localDryFanSpeed.value = value;
   } catch (error) {
     console.error('Failed to update dry fan:', error);
-    // Revert to previous value on error
     localDryFanSpeed.value = systemState.value.dryFanSpeed;
   } finally {
     isSyncing.value = false;
@@ -212,10 +231,9 @@ const updateWetFan = async (value) => {
   isSyncing.value = true;
   try {
     await setFanSpeed('wet', value);
-    localWetFanSpeed.value = value; // Update local value after successful Firebase update
+    localWetFanSpeed.value = value;
   } catch (error) {
     console.error('Failed to update wet fan:', error);
-    // Revert to previous value on error
     localWetFanSpeed.value = systemState.value.wetFanSpeed;
   } finally {
     isSyncing.value = false;
@@ -383,7 +401,7 @@ h1 {
   transition: var(--transition);
 }
 
-.controls-section {
+.controls-section, .psychrometric-section, .temperature-history {
   padding: var(--space-8);
   position: relative;
 }
@@ -441,10 +459,6 @@ button i {
   color: white;
 }
 
-.temperature-history {
-  padding: var(--space-8);
-}
-
 .history-header {
   display: flex;
   justify-content: space-between;
@@ -485,10 +499,6 @@ button i {
   box-shadow: var(--shadow-inner);
 }
 
-.relative {
-  position: relative;
-}
-
 @media (max-width: 768px) {
   .header-content {
     flex-direction: column;
@@ -508,10 +518,8 @@ button i {
     width: 100%;
   }
 
-  .controls-section {
-    padding: var(--space-4);
-  }
-
+  .controls-section,
+  .psychrometric-section,
   .temperature-history {
     padding: var(--space-4);
   }
