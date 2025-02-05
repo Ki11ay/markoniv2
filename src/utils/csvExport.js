@@ -3,21 +3,48 @@ export const convertToCSV = (data) => {
 
   // Define headers based on the data structure
   const headers = [
-    'Timestamp',
+    'Date',
+    'Time',
     'Hot Air (Inlet) °C',
     'Cold Air (Outlet) °C',
+    'Inlet Humidity %',
+    'Outlet Humidity %',
+    'Inlet Dew Point °C',
+    'Outlet Dew Point °C',
+    'Wet Bulb Effectiveness',
+    'Dew Point Effectiveness',
+    'Mass Flow Rate kg/s',
     'Dry Fan Speed %',
-    'Wet Fan Speed %'
+    'Wet Fan Speed %',
+    'Pump Status',
+    'Total Power W',
+    'Cooling Effect W',
+    'COP'
   ];
 
   // Convert data to CSV rows
-  const rows = data.map(item => [
-    new Date(item.timestamp).toLocaleString(),
-    item.inlet.toFixed(2),
-    item.dryOutlet.toFixed(2),
-    item.dryFan,
-    item.wetFan
-  ]);
+  const rows = data.map(item => {
+    const date = new Date(item.timestamp);
+    return [
+      date.toLocaleDateString(),
+      date.toLocaleTimeString(),
+      item.inlet.toFixed(2),
+      item.dryOutlet.toFixed(2),
+      item.inletHumidity.toFixed(1),
+      item.outletHumidity.toFixed(1),
+      item.inletDewPoint.toFixed(2),
+      item.outletDewPoint.toFixed(2),
+      item.effectiveness.wetBulb.toFixed(3),
+      item.effectiveness.dewPoint.toFixed(3),
+      item.massFlowRate.toFixed(3),
+      item.dryFan.toFixed(1),
+      item.wetFan.toFixed(1),
+      item.pumpStatus ? 'ON' : 'OFF',
+      item.powerTotal.toFixed(1),
+      item.coolingEffect.toFixed(1),
+      item.cop.toFixed(2)
+    ];
+  });
 
   // Combine headers and rows
   return [
@@ -47,9 +74,7 @@ export const downloadCSV = (csvContent, filename) => {
 
 export const generateTimestampedFilename = () => {
   const now = new Date();
-  const timestamp = now.toISOString()
-    .replace(/[:.]/g, '-')
-    .replace('T', '_')
-    .slice(0, -5); // Remove milliseconds
-  return `temperature_log_${timestamp}.csv`;
+  const date = now.toLocaleDateString().replace(/[/]/g, '-');
+  const time = now.toLocaleTimeString().replace(/[:.]/g, '-');
+  return `temperature_log_${date}_${time}.csv`;
 };
