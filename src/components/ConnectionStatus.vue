@@ -1,59 +1,37 @@
 <template>
-  <div class="connection-status">
-    <div class="status-group">
-      <span 
-        class="status-indicator" 
+  <div 
+    class="connection-status"
+    :class="{
+      'is-connected': isConnected,
+      'is-disconnected': !isConnected
+    }"
+  >
+    <div class="status-icon">
+      <i 
+        class="fas"
         :class="{
-          'connected': isConnected,
-          'pulse': isConnected
+          'fa-link connection-active': isConnected,
+          'fa-unlink error-shake': !isConnected
         }"
-      ></span>
-      <span class="status-text">
-        {{ isConnected ? 'Connected' : 'Disconnected' }}
-      </span>
+      ></i>
     </div>
-    <transition name="fade">
-      <div v-if="!isConnected" class="reconnect-timer">
-        Next check in {{ timeUntilNextCheck }}s
-      </div>
-    </transition>
+    <div class="status-text">
+      {{ isConnected ? 'Connected' : 'Disconnected' }}
+    </div>
+    <div 
+      v-if="!isConnected" 
+      class="reconnect-message"
+    >
+      Attempting to reconnect...
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from 'vue';
-import { useSystemControl } from '../composables/useSystemControl';
-
-const props = defineProps({
+defineProps({
   isConnected: {
     type: Boolean,
     required: true
-  },
-  checkInterval: {
-    type: Number,
-    default: 20000 // 20 seconds
-  }
-});
-
-const timeUntilNextCheck = ref(Math.ceil(props.checkInterval / 1000));
-let timer = null;
-
-const updateTimer = () => {
-  if (!props.isConnected) {
-    timeUntilNextCheck.value--;
-    if (timeUntilNextCheck.value <= 0) {
-      timeUntilNextCheck.value = Math.ceil(props.checkInterval / 1000);
-    }
-  }
-};
-
-onMounted(() => {
-  timer = setInterval(updateTimer, 1000);
-});
-
-onUnmounted(() => {
-  if (timer) {
-    clearInterval(timer);
   }
 });
 </script>
@@ -61,75 +39,75 @@ onUnmounted(() => {
 <style scoped>
 .connection-status {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius);
-  background-color: var(--card-background);
-  box-shadow: var(--shadow);
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: var(--transition);
 }
 
-.status-group {
+.is-connected {
+  background: var(--success-gradient);
+  color: var(--text-light);
+  box-shadow: var(--shadow-md);
+}
+
+.is-disconnected {
+  background: var(--danger-gradient);
+  color: var(--text-light);
+  box-shadow: var(--shadow-md);
+  animation: pulse 2s infinite;
+  --pulse-color: 239, 68, 68;
+}
+
+.status-icon {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.2);
 }
 
-.status-indicator {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  transition: all 0.3s ease;
-}
-
-.status-indicator.connected {
-  background-color: var(--success-color);
-  box-shadow: 0 0 8px var(--success-color);
-}
-
-.status-indicator:not(.connected) {
-  background-color: var(--danger-color);
-  box-shadow: 0 0 8px var(--danger-color);
+.status-icon i {
+  font-size: 0.875rem;
 }
 
 .status-text {
-  font-weight: 500;
-  color: var(--text-color);
+  font-weight: 600;
 }
 
-.reconnect-timer {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+.reconnect-message {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  animation: fade-in-out 2s ease-in-out infinite;
 }
 
-.pulse {
-  animation: pulse 2s infinite;
+@keyframes fade-in-out {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 1;
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .connection-status {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: var(--space-3);
+    gap: var(--space-2);
   }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.8;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
 
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
+  .status-icon {
+    width: 32px;
+    height: 32px;
+  }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+  .status-icon i {
+    font-size: 1rem;
+  }
 }
 </style>

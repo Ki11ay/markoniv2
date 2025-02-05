@@ -1,17 +1,32 @@
 <template>
-  <transition name="fade">
-    <div v-if="loading" class="loading-overlay" :class="{ contained }">
-      <div class="loading-spinner"></div>
-      <div v-if="message" class="loading-message">{{ message }}</div>
+  <div 
+    class="spinner-wrapper"
+    :class="{ 'contained': contained }"
+  >
+    <div class="spinner-content">
+      <div class="spinner">
+        <svg class="spinner-circle" viewBox="0 0 50 50">
+          <circle
+            class="path"
+            cx="25"
+            cy="25"
+            r="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="4"
+          />
+        </svg>
+      </div>
+      <div v-if="message" class="spinner-message">{{ message }}</div>
     </div>
-  </transition>
+  </div>
 </template>
 
 <script setup>
 defineProps({
   loading: {
     type: Boolean,
-    required: true
+    default: true
   },
   message: {
     type: String,
@@ -25,55 +40,88 @@ defineProps({
 </script>
 
 <style scoped>
-.loading-overlay {
+.spinner-wrapper {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--glass-background);
+  backdrop-filter: var(--glass-blur);
+  z-index: var(--z-50);
+}
+
+.spinner-wrapper.contained {
+  position: absolute;
+  background: var(--glass-background);
+  border-radius: var(--radius-lg);
+}
+
+.spinner-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  z-index: 1000;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: scale 0.3s ease-out;
 }
 
-.loading-overlay.contained {
-  position: absolute;
-  border-radius: var(--border-radius);
+.spinner {
+  width: 40px;
+  height: 40px;
+  color: var(--primary);
 }
 
-.loading-spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s linear infinite;
+.spinner-circle {
+  animation: rotate 2s linear infinite;
+  transform-origin: center;
 }
 
-.loading-message {
-  margin-top: 1rem;
-  color: #fff;
-  font-size: 1rem;
+.path {
+  stroke-dasharray: 128;
+  stroke-dashoffset: 128;
+  animation: dash 1.5s ease-in-out infinite;
+}
+
+.spinner-message {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
   text-align: center;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  max-width: 200px;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+@keyframes rotate {
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
+@keyframes dash {
+  0% {
+    stroke-dashoffset: 128;
+  }
+  50% {
+    stroke-dashoffset: 32;
+  }
+  100% {
+    stroke-dashoffset: 128;
+  }
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+@keyframes scale {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 </style>

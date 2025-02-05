@@ -1,156 +1,267 @@
 <template>
   <div class="login-container">
-    <div class="login-card card">
-      <h1>{{ isRegister ? 'Create Account' : 'Login' }}</h1>
-      
-      <form @submit.prevent="handleSubmit" class="login-form">
+    <div class="login-card glass-card">
+      <div class="logo-section">
+        <i class="fas fa-snowflake fa-spin"></i>
+        <h1>AC Control</h1>
+      </div>
+
+      <form @submit.prevent="handleLogin" class="login-form">
         <div class="form-group">
           <label for="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            v-model="email"
-            required
-            placeholder="Enter your email"
-            :disabled="loading"
-          />
+          <div class="input-wrapper">
+            <i class="fas fa-envelope"></i>
+            <input
+              id="email"
+              v-model="email"
+              type="email"
+              required
+              autocomplete="email"
+              :disabled="loading"
+              placeholder="Enter your email"
+            >
+          </div>
         </div>
 
         <div class="form-group">
           <label for="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            v-model="password"
-            required
-            placeholder="Enter your password"
-            :disabled="loading"
-          />
+          <div class="input-wrapper">
+            <i class="fas fa-lock"></i>
+            <input
+              id="password"
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              required
+              autocomplete="current-password"
+              :disabled="loading"
+              placeholder="Enter your password"
+            >
+            <button 
+              type="button"
+              class="toggle-password"
+              @click="showPassword = !showPassword"
+              :disabled="loading"
+            >
+              <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+          </div>
         </div>
 
-        <div v-if="error" class="error-text">
+        <div v-if="error" class="error-message error-shake">
+          <i class="fas fa-exclamation-circle"></i>
           {{ error }}
         </div>
 
-        <button
+        <button 
           type="submit"
-          class="submit-button"
+          class="login-button ripple hover-lift"
           :disabled="loading"
-          :class="{ loading }"
+          :class="{ 'loading': loading }"
         >
-          {{ isRegister ? 'Sign Up' : 'Sign In' }}
+          <i class="fas fa-sign-in-alt"></i>
+          <span>{{ loading ? 'Logging in...' : 'Login' }}</span>
         </button>
       </form>
-
-      <div class="toggle-auth">
-        <span>
-          {{ isRegister ? 'Already have an account?' : "Don't have an account?" }}
-        </span>
-        <button
-          class="toggle-button"
-          @click="isRegister = !isRegister"
-          :disabled="loading"
-        >
-          {{ isRegister ? 'Sign In' : 'Sign Up' }}
-        </button>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useFirebase } from '../composables/useFirebase';
 
-const { loginUser, registerUser, error, loading } = useFirebase();
+const router = useRouter();
+const { loginUser } = useFirebase();
 
 const email = ref('');
 const password = ref('');
-const isRegister = ref(false);
+const showPassword = ref(false);
+const loading = ref(false);
+const error = ref('');
 
-// Watch for error changes and log them
-watch(error, (newError) => {
-  if (newError) {
-    console.log('Auth error:', newError);
-  }
-});
+const handleLogin = async () => {
+  error.value = '';
+  loading.value = true;
 
-const handleSubmit = async () => {
-  if (isRegister.value) {
-    await registerUser(email.value, password.value);
-  } else {
+  try {
     await loginUser(email.value, password.value);
+    router.push('/');
+  } catch (err) {
+    error.value = err.message || 'Failed to login';
+  } finally {
+    loading.value = false;
   }
 };
 </script>
 
 <style scoped>
 .login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
-  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
 }
 
 .login-card {
   width: 100%;
   max-width: 400px;
+  padding: var(--space-8);
+  color: var(--text-primary);
 }
 
-.login-card h1 {
-  color: var(--primary-color);
+.logo-section {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: var(--space-8);
+}
+
+.logo-section i {
+  font-size: 3rem;
+  color: var(--primary);
+  margin-bottom: var(--space-4);
+}
+
+.logo-section h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 0;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: var(--space-6);
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .form-group label {
   font-weight: 500;
+  color: var(--text-secondary);
 }
 
-.submit-button {
-  background-color: var(--primary-color);
-  color: white;
-  width: 100%;
-  padding: 1rem;
-  font-size: 1rem;
-  margin-top: 1rem;
-}
-
-.submit-button.loading {
-  opacity: 0.7;
-}
-
-.toggle-auth {
-  margin-top: 2rem;
-  text-align: center;
+.input-wrapper {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  align-items: center;
 }
 
-.toggle-button {
+.input-wrapper i {
+  position: absolute;
+  left: var(--space-4);
+  color: var(--text-tertiary);
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  padding-left: calc(var(--space-4) * 2 + 1em);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+.input-wrapper input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.2);
+}
+
+.toggle-password {
+  position: absolute;
+  right: var(--space-3);
   background: none;
-  color: var(--primary-color);
-  font-weight: 600;
-  padding: 0.5rem;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  transition: var(--transition);
 }
 
-.toggle-button:hover {
-  transform: none;
-  box-shadow: none;
-  text-decoration: underline;
+.toggle-password:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--border-light);
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius);
+  background: var(--danger);
+  color: white;
+  font-size: 0.875rem;
+}
+
+.login-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-4);
+  background: var(--primary-gradient);
+  color: white;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.login-button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.login-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.login-button.loading {
+  position: relative;
+}
+
+.login-button.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+  animation: loading-bar 1.5s ease-in-out infinite;
+}
+
+@media (max-width: 768px) {
+  .login-card {
+    padding: var(--space-6);
+  }
+
+  .logo-section i {
+    font-size: 2.5rem;
+  }
+
+  .logo-section h1 {
+    font-size: 1.75rem;
+  }
 }
 </style>

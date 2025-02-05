@@ -1,52 +1,44 @@
 <template>
-  <div class="slider-wrapper" :class="{ disabled }">
+  <div 
+    class="slider-container"
+    :class="{ 'is-disabled': disabled }"
+  >
     <div class="slider-header">
       <label :for="id" class="slider-label">{{ label }}</label>
-      <div class="slider-value">{{ displayValue }}%</div>
+      <div class="slider-value">
+        {{ modelValue }}%
+        <span v-if="targetValue !== null && targetValue !== modelValue" class="target-value">
+          → {{ targetValue }}%
+        </span>
+      </div>
     </div>
     
-    <div class="slider-container">
+    <div class="slider-wrapper">
       <input
         :id="id"
         type="range"
-        :min="min"
-        :max="max"
-        :step="step"
-        :disabled="disabled"
+        min="0"
+        max="100"
+        step="1"
         :value="modelValue"
-        @input="handleInput"
-        @change="handleChange"
+        @input="$emit('update:modelValue', Number($event.target.value))"
+        @change="$emit('change', Number($event.target.value))"
+        :disabled="disabled"
+        class="slider"
       />
-      
       <div 
-        class="slider-progress" 
-        :style="{ width: `${modelValue}%` }"
+        class="slider-track"
+        :style="{
+          '--slider-value': `${modelValue}%`,
+          '--track-color': getTrackColor(modelValue)
+        }"
       ></div>
-      
-      <div 
-        class="slider-target" 
-        :style="{ left: `${targetValue}%` }"
-        :class="{ active: showTarget }"
-      >
-        <div class="target-value">{{ targetValue }}%</div>
-      </div>
-      
-      <div class="slider-markers">
-        <span 
-          v-for="marker in markers" 
-          :key="marker"
-          class="marker"
-          :style="{ left: `${marker}%` }"
-        ></span>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue';
-
-const props = defineProps({
+defineProps({
   modelValue: {
     type: Number,
     required: true
@@ -59,49 +51,25 @@ const props = defineProps({
     type: String,
     required: true
   },
-  min: {
-    type: Number,
-    default: 0
-  },
-  max: {
-    type: Number,
-    default: 100
-  },
-  step: {
-    type: Number,
-    default: 1
+  id: {
+    type: String,
+    required: true
   },
   disabled: {
     type: Boolean,
     default: false
-  },
-  id: {
-    type: String,
-    required: true
   }
 });
 
-const emit = defineEmits(['update:modelValue', 'change']);
-
-const displayValue = computed(() => Math.round(props.modelValue));
-const showTarget = computed(() => props.targetValue !== null && props.targetValue !== props.modelValue);
-
-// Create markers at each quarter
-const markers = computed(() => {
-  return [0, 25, 50, 75, 100];
-});
-
-const handleInput = (event) => {
-  emit('update:modelValue', Number(event.target.value));
-};
-
-const handleChange = (event) => {
-  emit('change', Number(event.target.value));
+const getTrackColor = (value) => {
+  if (value < 30) return 'var(--primary-light)';
+  if (value < 70) return 'var(--primary)';
+  return 'var(--primary-dark)';
 };
 </script>
 
 <style scoped>
-.slider-wrapper {
+.slider-container {
   width: 100%;
 }
 
@@ -113,124 +81,135 @@ const handleChange = (event) => {
 }
 
 .slider-label {
-  color: var(--text-primary);
   font-weight: 500;
+  color: var(--text-primary);
 }
 
 .slider-value {
-  color: var(--text-secondary);
   font-weight: 600;
-  min-width: 3rem;
-  text-align: right;
-}
-
-.slider-container {
-  position: relative;
-  height: calc(var(--slider-height) + var(--space-8));
-  padding-top: var(--space-4);
-}
-
-input[type="range"] {
-  position: absolute;
-  top: var(--space-4);
-  left: 0;
-  width: 100%;
-  z-index: 2;
-}
-
-.slider-progress {
-  position: absolute;
-  top: var(--space-4);
-  left: 0;
-  height: var(--slider-height);
-  background: var(--primary-gradient);
-  border-radius: var(--radius-full);
-  pointer-events: none;
-  transition: width var(--transition);
-}
-
-.slider-target {
-  position: absolute;
-  top: 0;
-  width: 2px;
-  height: calc(var(--slider-height) + var(--space-2));
-  background-color: var(--success);
-  transform: translateX(-50%);
-  transition: left var(--transition);
-  opacity: 0;
-  pointer-events: none;
-}
-
-.slider-target.active {
-  opacity: 1;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .target-value {
-  position: absolute;
-  top: -20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: var(--success);
-  color: white;
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-left: var(--space-1);
+  animation: fade-in 0.3s ease-out;
 }
 
-.slider-markers {
+.slider-wrapper {
+  position: relative;
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  background: transparent;
+  position: relative;
+  z-index: 2;
+}
+
+.slider-track {
   position: absolute;
-  top: var(--space-4);
   left: 0;
-  right: 0;
-  height: var(--slider-height);
-  pointer-events: none;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--border-light);
+  overflow: hidden;
+  z-index: 1;
 }
 
-.marker {
+.slider-track::before {
+  content: '';
   position: absolute;
-  width: 2px;
-  height: var(--slider-height);
-  background-color: var(--border-color);
-  transform: translateX(-50%);
+  left: 0;
+  top: 0;
+  width: var(--slider-value);
+  height: 100%;
+  background: var(--track-color);
+  transition: width var(--transition), background-color var(--transition);
 }
 
-.disabled {
+/* Thumb Styles */
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--primary);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: all var(--transition);
+}
+
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--primary);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: all var(--transition);
+}
+
+/* Hover States */
+.slider:not(:disabled)::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-md);
+}
+
+.slider:not(:disabled)::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-md);
+}
+
+/* Active States */
+.slider:not(:disabled)::-webkit-slider-thumb:active {
+  transform: scale(0.95);
+  box-shadow: var(--shadow-sm);
+}
+
+.slider:not(:disabled)::-moz-range-thumb:active {
+  transform: scale(0.95);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Disabled State */
+.is-disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.disabled input[type="range"] {
+.is-disabled .slider::-webkit-slider-thumb {
+  background: var(--border-light);
+  border-color: var(--border);
   cursor: not-allowed;
 }
 
-/* Slider track styling for Firefox */
-input[type="range"]::-moz-range-track {
-  width: 100%;
-  height: var(--slider-height);
-  background: var(--slider-track-color);
-  border-radius: var(--radius-full);
-  border: none;
+.is-disabled .slider::-moz-range-thumb {
+  background: var(--border-light);
+  border-color: var(--border);
+  cursor: not-allowed;
 }
 
-/* Slider thumb styling for Firefox */
-input[type="range"]::-moz-range-thumb {
-  width: var(--slider-thumb-size);
-  height: var(--slider-thumb-size);
-  background: var(--slider-thumb-color);
-  border: none;
-  border-radius: 50%;
-  box-shadow: var(--slider-thumb-shadow);
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-input[type="range"]::-moz-range-thumb:hover {
-  box-shadow: var(--slider-thumb-shadow-active);
-  transform: scale(1.1);
-}
-
-input[type="range"]::-moz-range-thumb:active {
-  transform: scale(1.2);
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 </style>
