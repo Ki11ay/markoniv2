@@ -9,15 +9,6 @@
     >
       <router-view></router-view>
     </Transition>
-
-    <button 
-      class="theme-toggle ripple hover-lift"
-      @click="toggleTheme"
-      v-if="$route.name !== 'login'"
-      :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
-    >
-      <i :class="theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'"></i>
-    </button>
   </div>
 </template>
 
@@ -28,11 +19,6 @@ import { useRouter } from 'vue-router';
 const theme = ref(localStorage.getItem('theme') || 'light');
 const router = useRouter();
 
-const toggleTheme = () => {
-  theme.value = theme.value === 'light' ? 'dark' : 'light';
-  localStorage.setItem('theme', theme.value);
-};
-
 // Watch for system theme changes
 onMounted(() => {
   const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
@@ -41,11 +27,13 @@ onMounted(() => {
     theme.value = systemDark.matches ? 'dark' : 'light';
     localStorage.setItem('theme', theme.value);
   }
+  document.documentElement.setAttribute('data-theme', theme.value);
 
   systemDark.addEventListener('change', (e) => {
     if (!localStorage.getItem('theme')) {
       theme.value = e.matches ? 'dark' : 'light';
       localStorage.setItem('theme', theme.value);
+      document.documentElement.setAttribute('data-theme', theme.value);
     }
   });
 });
@@ -67,53 +55,13 @@ watch(() => router.currentRoute.value.name, (newRoute, oldRoute) => {
   min-width: 100vw;
 }
 
-/* Theme Toggle Button */
-.theme-toggle {
-  position: fixed;
-  bottom: var(--space-6);
-  right: var(--space-6);
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-full);
-  background: var(--surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-lg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: var(--z-50);
-  transition: var(--transition);
-}
-
-.theme-toggle i {
-  font-size: 1.25rem;
-  transition: transform var(--transition);
-}
-
-.theme-toggle:hover i {
-  transform: rotate(15deg) scale(1.1);
-}
-
-[data-theme="dark"] .theme-toggle:hover i {
-  transform: rotate(-15deg) scale(1.1);
-}
-
-@media (max-width: 768px) {
-  .theme-toggle {
-    bottom: var(--space-4);
-    right: var(--space-4);
-    width: 40px;
-    height: 40px;
-  }
-
-  .theme-toggle i {
-    font-size: 1rem;
-  }
-}
-
 /* Global Styles */
+:root {
+  --primary-color: #2563eb;
+  --primary-dark: #1d4ed8;
+  --accent-color: #3b82f6;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -139,7 +87,7 @@ input, button {
 
 /* Selection color */
 ::selection {
-  background: var(--primary);
+  background: var(--primary-color);
   color: white;
 }
 
@@ -161,5 +109,25 @@ input, button {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border-dark);
+}
+
+/* Page transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Remove dark mode image filters */
+[data-theme="dark"] img {
+  filter: none;
+}
+
+[data-theme="dark"] .hero-image {
+  filter: none;
 }
 </style>

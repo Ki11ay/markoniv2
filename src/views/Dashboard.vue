@@ -1,173 +1,178 @@
 <template>
-  <div class="dashboard container">
-    <header class="header">
-      <div class="header-content">
-        <div class="header-title">
-          <h1>AC Control Dashboard</h1>
-          <connection-status :is-connected="systemState.isSystemConnected" />
+  <div class="dashboard">
+    <DashboardNav />
+    <div class="dashboard-content">
+      <div class="dashboard container">
+        <header class="header">
+          <div class="header-content">
+            <div class="header-title">
+              <h1>AC Control Dashboard</h1>
+              <connection-status :is-connected="systemState.isSystemConnected" />
+            </div>
+            <div class="header-actions">
+              <button class="settings-button hover-lift ripple" @click="$router.push('/settings')">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+              </button>
+              <button class="logout-button hover-lift ripple" @click="handleLogout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div class="status-cards">
+          <div 
+            class="status-card cold-temp" 
+            :class="{ disconnected: !systemState.isSystemConnected }"
+          >
+            <div class="sensor-info">
+              <i class="fas fa-thermometer-half"></i>
+              <h3>Cold Air (Outlet)</h3>
+            </div>
+            <div class="sensor-value">
+              {{ systemState.dryOutletTemp?.toFixed(2) || '--' }}°C
+              <span class="trend-indicator">
+                <i class="fas fa-arrow-down"></i>
+              </span>
+            </div>
+          </div>
+
+          <div 
+            class="status-card hot-temp" 
+            :class="{ disconnected: !systemState.isSystemConnected }"
+          >
+            <div class="sensor-info">
+              <i class="fas fa-thermometer-full"></i>
+              <h3>Hot Air (Inlet)</h3>
+            </div>
+            <div class="sensor-value">
+              {{ systemState.inletTemp?.toFixed(2) || '--' }}°C
+              <span class="trend-indicator">
+                <i class="fas fa-arrow-up"></i>
+              </span>
+            </div>
+          </div>
+
+          <div class="status-card">
+            <div class="sensor-info">
+              <i class="fas fa-fan fa-spin"></i>
+              <h3>Dry Fan</h3>
+            </div>
+            <div class="sensor-value">{{ systemState.dryFanSpeed }}%</div>
+          </div>
+
+          <div class="status-card">
+            <div class="sensor-info">
+              <i class="fas fa-fan fa-spin"></i>
+              <h3>Wet Fan</h3>
+            </div>
+            <div class="sensor-value">{{ systemState.wetFanSpeed }}%</div>
+          </div>
         </div>
-        <div class="header-actions">
-          <button class="settings-button hover-lift ripple" @click="$router.push('/settings')">
-            <i class="fas fa-cog"></i>
-            <span>Settings</span>
-          </button>
-          <button class="logout-button hover-lift ripple" @click="handleLogout">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>Logout</span>
-          </button>
+
+        <div class="controls-section card">
+          <loading-spinner 
+            :loading="isSyncing" 
+            message="Updating controls..." 
+            :contained="true" 
+          />
+          
+          <h2>System Controls</h2>
+          
+          <div class="fan-controls">
+            <custom-slider
+              v-model="localDryFanSpeed"
+              :target-value="systemState.dryFanSpeed"
+              label="Dry Fan Speed"
+              id="dry-fan"
+              @update:modelValue="handleDryFanInput"
+              @change="updateDryFan"
+              :disabled="systemState.isOptimalMode || isSyncing"
+            />
+
+            <custom-slider
+              v-model="localWetFanSpeed"
+              :target-value="systemState.wetFanSpeed"
+              label="Wet Fan Speed"
+              id="wet-fan"
+              @update:modelValue="handleWetFanInput"
+              @change="updateWetFan"
+              :disabled="systemState.isOptimalMode || isSyncing"
+            />
+          </div>
+
+          <div class="action-buttons">
+            <button 
+              class="pump-button ripple hover-lift"
+              :class="{ active: systemState.isPumpActive }"
+              @click="togglePump"
+              :disabled="systemState.isOptimalMode || isSyncing"
+            >
+              <i class="fas fa-tint"></i>
+              <span>{{ systemState.isPumpActive ? 'Pump On' : 'Pump Off' }}</span>
+            </button>
+
+            <button 
+              class="optimal-button ripple hover-lift"
+              :class="{ active: systemState.isOptimalMode }"
+              @click="toggleOptimalMode"
+              :disabled="isSyncing"
+            >
+              <i class="fas fa-magic"></i>
+              <span>{{ systemState.isOptimalMode ? 'Optimal Mode On' : 'Optimal Mode Off' }}</span>
+            </button>
+
+            <button 
+              class="stop-button ripple hover-lift" 
+              @click="handleEmergencyStop"
+              :disabled="isSyncing"
+            >
+              <i class="fas fa-stop"></i>
+              <span>Emergency Stop</span>
+            </button>
+          </div>
         </div>
-      </div>
-    </header>
 
-    <div class="status-cards">
-      <div 
-        class="status-card cold-temp" 
-        :class="{ disconnected: !systemState.isSystemConnected }"
-      >
-        <div class="sensor-info">
-          <i class="fas fa-thermometer-half"></i>
-          <h3>Cold Air (Outlet)</h3>
+        <div class="psychrometric-section card">
+          <psychrometric-chart
+            :inlet-temp="systemState.inletTemp"
+            :outlet-temp="systemState.dryOutletTemp"
+            :inlet-humidity="systemState.intakeHumidity"
+            :outlet-humidity="systemState.outtakeHumidity"
+            :inlet-dew-point="systemState.inletDewPoint"
+            :outlet-dew-point="systemState.outletDewPoint"
+            :inlet-wet-bulb="systemState.inletWetBulb"
+            :outlet-wet-bulb="systemState.outletWetBulb"
+            :inlet-enthalpy="systemState.inletEnthalpy"
+            :outlet-enthalpy="systemState.outletEnthalpy"
+            :cop="systemState.cop"
+            :cooling-effect="systemState.coolingEffect"
+            :power-consumption="systemState.powerConsumption"
+            :mass-flow-rate="systemState.massFlowRate"
+            :effectiveness="systemState.effectiveness"
+            :temperatures="systemState.temperatures"
+          />
         </div>
-        <div class="sensor-value">
-          {{ systemState.dryOutletTemp?.toFixed(2) || '--' }}°C
-          <span class="trend-indicator">
-            <i class="fas fa-arrow-down"></i>
-          </span>
+
+        <div class="temperature-history card">
+          <div class="history-header">
+            <h2>Temperature History</h2>
+            <button 
+              class="export-button hover-lift ripple"
+              @click="exportTemperatureLog"
+              :disabled="!temperatureLog.length"
+              title="Export temperature log to CSV"
+            >
+              <i class="fas fa-download"></i>
+              <span>Export Data</span>
+            </button>
+          </div>
+          <div class="chart-container">
+            <temperature-chart :temperature-log="temperatureLog" />
+          </div>
         </div>
-      </div>
-
-      <div 
-        class="status-card hot-temp" 
-        :class="{ disconnected: !systemState.isSystemConnected }"
-      >
-        <div class="sensor-info">
-          <i class="fas fa-thermometer-full"></i>
-          <h3>Hot Air (Inlet)</h3>
-        </div>
-        <div class="sensor-value">
-          {{ systemState.inletTemp?.toFixed(2) || '--' }}°C
-          <span class="trend-indicator">
-            <i class="fas fa-arrow-up"></i>
-          </span>
-        </div>
-      </div>
-
-      <div class="status-card">
-        <div class="sensor-info">
-          <i class="fas fa-fan fa-spin"></i>
-          <h3>Dry Fan</h3>
-        </div>
-        <div class="sensor-value">{{ systemState.dryFanSpeed }}%</div>
-      </div>
-
-      <div class="status-card">
-        <div class="sensor-info">
-          <i class="fas fa-fan fa-spin"></i>
-          <h3>Wet Fan</h3>
-        </div>
-        <div class="sensor-value">{{ systemState.wetFanSpeed }}%</div>
-      </div>
-    </div>
-
-    <div class="controls-section card">
-      <loading-spinner 
-        :loading="isSyncing" 
-        message="Updating controls..." 
-        :contained="true" 
-      />
-      
-      <h2>System Controls</h2>
-      
-      <div class="fan-controls">
-        <custom-slider
-          v-model="localDryFanSpeed"
-          :target-value="systemState.dryFanSpeed"
-          label="Dry Fan Speed"
-          id="dry-fan"
-          @update:modelValue="handleDryFanInput"
-          @change="updateDryFan"
-          :disabled="systemState.isOptimalMode || isSyncing"
-        />
-
-        <custom-slider
-          v-model="localWetFanSpeed"
-          :target-value="systemState.wetFanSpeed"
-          label="Wet Fan Speed"
-          id="wet-fan"
-          @update:modelValue="handleWetFanInput"
-          @change="updateWetFan"
-          :disabled="systemState.isOptimalMode || isSyncing"
-        />
-      </div>
-
-      <div class="action-buttons">
-        <button 
-          class="pump-button ripple hover-lift"
-          :class="{ active: systemState.isPumpActive }"
-          @click="togglePump"
-          :disabled="systemState.isOptimalMode || isSyncing"
-        >
-          <i class="fas fa-tint"></i>
-          <span>{{ systemState.isPumpActive ? 'Pump On' : 'Pump Off' }}</span>
-        </button>
-
-        <button 
-          class="optimal-button ripple hover-lift"
-          :class="{ active: systemState.isOptimalMode }"
-          @click="toggleOptimalMode"
-          :disabled="isSyncing"
-        >
-          <i class="fas fa-magic"></i>
-          <span>{{ systemState.isOptimalMode ? 'Optimal Mode On' : 'Optimal Mode Off' }}</span>
-        </button>
-
-        <button 
-          class="stop-button ripple hover-lift" 
-          @click="handleEmergencyStop"
-          :disabled="isSyncing"
-        >
-          <i class="fas fa-stop"></i>
-          <span>Emergency Stop</span>
-        </button>
-      </div>
-    </div>
-
-    <div class="psychrometric-section card">
-      <psychrometric-chart
-        :inlet-temp="systemState.inletTemp"
-        :outlet-temp="systemState.dryOutletTemp"
-        :inlet-humidity="systemState.intakeHumidity"
-        :outlet-humidity="systemState.outtakeHumidity"
-        :inlet-dew-point="systemState.inletDewPoint"
-        :outlet-dew-point="systemState.outletDewPoint"
-        :inlet-wet-bulb="systemState.inletWetBulb"
-        :outlet-wet-bulb="systemState.outletWetBulb"
-        :inlet-enthalpy="systemState.inletEnthalpy"
-        :outlet-enthalpy="systemState.outletEnthalpy"
-        :cop="systemState.cop"
-        :cooling-effect="systemState.coolingEffect"
-        :power-consumption="systemState.powerConsumption"
-        :mass-flow-rate="systemState.massFlowRate"
-        :effectiveness="systemState.effectiveness"
-        :temperatures="systemState.temperatures"
-      />
-    </div>
-
-    <div class="temperature-history card">
-      <div class="history-header">
-        <h2>Temperature History</h2>
-        <button 
-          class="export-button hover-lift ripple"
-          @click="exportTemperatureLog"
-          :disabled="!temperatureLog.length"
-          title="Export temperature log to CSV"
-        >
-          <i class="fas fa-download"></i>
-          <span>Export Data</span>
-        </button>
-      </div>
-      <div class="chart-container">
-        <temperature-chart :temperature-log="temperatureLog" />
       </div>
     </div>
   </div>
@@ -183,6 +188,7 @@ import { useFirebase } from '../composables/useFirebase';
 import TemperatureChart from '../components/TemperatureChart.vue';
 import PsychrometricChart from '../components/PsychrometricChart.vue';
 import { convertToCSV, downloadCSV, generateTimestampedFilename } from '../utils/csvExport';
+import DashboardNav from '../components/DashboardNav.vue';
 
 const { systemState, temperatureLog, setFanSpeed, togglePump: togglePumpState, setOptimalMode, emergencyStop } = useSystemControl();
 const { logoutUser } = useFirebase();
@@ -278,16 +284,16 @@ onMounted(() => {
 
 <style scoped>
 .dashboard {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-  padding: var(--space-4);
   min-height: 100vh;
-  background-color: var(--background);
+  background: var(--background);
+}
+
+.dashboard-content {
+  padding-top: 60px; /* Height of the nav bar */
 }
 
 .header {
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-8);
 }
 
 .header-content {
@@ -295,6 +301,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   gap: var(--space-4);
+  margin-bottom: var(--space-8);
 }
 
 .header-title {
@@ -328,7 +335,8 @@ h1 {
 .status-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--space-4);
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
 }
 
 .status-card {
@@ -404,6 +412,7 @@ h1 {
 .controls-section, .psychrometric-section, .temperature-history {
   padding: var(--space-8);
   position: relative;
+  margin-bottom: var(--space-8);
 }
 
 h2 {
@@ -424,6 +433,7 @@ h2 {
   flex-wrap: wrap;
   gap: var(--space-4);
   justify-content: center;
+  margin-bottom: var(--space-8);
 }
 
 button {

@@ -4,14 +4,28 @@ import { getAuth } from 'firebase/auth';
 const routes = [
   {
     path: '/',
+    name: 'Home',
+    component: () => import('../components/LandingPage.vue')
+  },
+  {
+    path: '/dashboard',
     name: 'Dashboard',
     component: () => import('../views/Dashboard.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
+    beforeEnter: async (to, from, next) => {
+      const auth = getAuth();
+      if (!auth.currentUser) {
+        next({ name: 'Login', query: { redirect: to.fullPath } });
+      } else {
+        next();
+      }
+    }
   },
   {
     path: '/login',
     name: 'Login',
-    component: () => import('../views/Login.vue')
+    component: () => import('../views/Login.vue'),
+    meta: { guestOnly: true }
   },
   {
     path: '/settings',
@@ -29,12 +43,13 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const auth = getAuth();
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const guestOnly = to.matched.some(record => record.meta.guestOnly);
   const isAuthenticated = auth.currentUser;
 
   if (requiresAuth && !isAuthenticated) {
-    next('/login');
-  } else if (to.path === '/login' && isAuthenticated) {
-    next('/');
+    next({ name: 'Login', query: { redirect: to.fullPath } });
+  } else if (guestOnly && isAuthenticated) {
+    next({ name: 'Dashboard' });
   } else {
     next();
   }
