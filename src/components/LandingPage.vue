@@ -9,8 +9,15 @@
           <i class="fas fa-sign-in-alt"></i>
           Access Dashboard
         </router-link>
+        <!-- Scroll Indicator -->
+        <div class="scroll-indicator">
+          <span v-for="(_, index) in images" 
+                :key="index" 
+                :class="{ 'dot': true, 'active': index === currentImageIndex }">
+          </span>
+        </div>
       </div>
-      <img src="/System_Model.png" alt="Cooling System" class="hero-image" />
+      <img :src="currentImage" alt="Cooling System" class="hero-image" />
     </section>
 
     <!-- Feature Cards Section -->
@@ -58,7 +65,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -160,29 +167,46 @@ const teamMembers = [
   }
 ];
 
+// Image cycling logic
+const images = ['/System_Model.png', '/Air.png', '/cross.png'];
+const currentImageIndex = ref(0);
+const currentImage = ref(images[currentImageIndex.value]);
+
+// Watch for index changes to update the image source
+watch(currentImageIndex, (newIndex) => {
+  // Add a small delay or use nextTick if CSS transitions aren't smooth
+  currentImage.value = images[newIndex];
+});
+
 onMounted(() => {
-  // Hero animations
-  gsap.from('.hero-title', {
-    y: 100,
-    opacity: 0,
-    duration: 1,
-    ease: 'power3.out'
-  });
+  // Use matchMedia for responsive ScrollTrigger setup
+  ScrollTrigger.matchMedia({
+    // Desktop setup (screens wider than 768px)
+    "(min-width: 769px)": () => {
+      ScrollTrigger.create({
+        trigger: heroSection.value,
+        start: 'top top',
+        end: `+=${window.innerHeight * (images.length - 1)}`,
+        pin: true,
+        scrub: 0.5,
+        onUpdate: (self) => {
+          const progress = self.progress;
+          const index = Math.min(images.length - 1, Math.floor(progress * images.length));
+          if (index !== currentImageIndex.value) {
+            currentImageIndex.value = index;
+          }
+        },
+      });
+    },
 
-  gsap.from('.subtitle', {
-    y: 50,
-    opacity: 0,
-    duration: 1,
-    delay: 0.3,
-    ease: 'power3.out'
-  });
-
-  gsap.from('.hero-image', {
-    scale: 0.8,
-    opacity: 0,
-    duration: 1.5,
-    delay: 0.5,
-    ease: 'power3.out'
+    // Mobile setup (screens 768px wide or less)
+    "(max-width: 768px)": () => {
+      // On mobile, we don't pin or scrub.
+      // Ensure the first image is shown and stays that way.
+      currentImageIndex.value = 0;
+      currentImage.value = images[0];
+      // Any previously created ScrollTriggers for this media query range are automatically killed.
+    }
   });
 
   // Feature cards animations
@@ -221,14 +245,11 @@ onMounted(() => {
 
 <style scoped>
 .landing-page {
-  max-width: 1200px;
   margin: 0 auto;
-  padding: var(--space-6);
 }
 
 .hero {
   min-height: 100vh;
-  min-width: max-content;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -238,7 +259,9 @@ onMounted(() => {
   position: relative;
   overflow: hidden;
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, transparent 100%);
-  padding: var(--space-8) var(--space-12);
+  padding: var(--space-4) var(--space-12);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .hero::before {
@@ -272,6 +295,8 @@ onMounted(() => {
   max-width: 600px;
   position: relative;
   z-index: 1;
+  display: flex; /* Enable flex column for indicator positioning */
+  flex-direction: column; /* Stack text elements */
 }
 
 .hero h1 {
@@ -297,6 +322,27 @@ onMounted(() => {
   padding: 0;
 }
 
+.scroll-indicator {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-6); /* Space above indicator */
+  justify-content: flex-start; /* Align to left */
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--text-secondary);
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+}
+
+.dot.active {
+  opacity: 1;
+  background-color: #2563eb; /* Use primary color */
+}
+
 .hero-image {
   flex: 1;
   max-width: 50%;
@@ -314,7 +360,9 @@ onMounted(() => {
   position: relative;
   background: transparent;
   border: 2px solid transparent;
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, opacity 0.5s ease-in-out;
+  opacity: 1;
+  margin-right: auto;
 }
 
 .hero-image:hover {
@@ -589,6 +637,29 @@ onMounted(() => {
 @media (max-width: 768px) {
   .hero {
     padding: var(--space-6) var(--space-4);
+    min-height: auto; /* Allow natural height */
+    height: auto;
+    flex-direction: column; /* Ensure stacking */
+    text-align: center;
+  }
+
+  .hero-text {
+    order: 2;
+    max-width: 100%;
+    align-items: center; /* Center text block content */
+  }
+
+  .hero-image {
+    order: 1;
+    max-width: 90%;
+    max-height: 45vh;
+    margin-bottom: var(--space-6);
+    flex: none; /* Reset flex properties */
+    width: auto;
+  }
+
+  .scroll-indicator {
+    display: none; /* Hide indicator on mobile */
   }
 
   .hero h1 {
@@ -599,12 +670,6 @@ onMounted(() => {
 
   .subtitle {
     font-size: clamp(1rem, 4vw, 1.2rem);
-    margin-bottom: var(--space-6);
-  }
-
-  .hero-image {
-    max-width: 90%;
-    max-height: 45vh;
     margin-bottom: var(--space-6);
   }
 

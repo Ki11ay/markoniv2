@@ -53,6 +53,7 @@ watch(() => router.currentRoute.value.name, (newRoute, oldRoute) => {
 .app-wrapper {
   min-height: 100vh;
   min-width: 100vw;
+  overflow-x: hidden;
 }
 
 /* Global Styles */

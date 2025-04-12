@@ -404,4 +404,22 @@ input:checked + .slider:before {
     justify-content: center;
   }
 }
+
+@media (max-width: 480px) {
+  .setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .setting-item .toggle, 
+  .setting-item .input-with-unit {
+    width: 100%;
+    margin-top: var(--space-2);
+  }
+
+  .number-input {
+    width: 100%;
+  }
+}
 </style> 
