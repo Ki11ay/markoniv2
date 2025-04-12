@@ -9,7 +9,7 @@
               <h1>AC Control Dashboard</h1>
               <connection-status :is-connected="systemState.isSystemConnected" />
             </div>
-            <div class="header-actions">
+            <!-- <div class="header-actions">
               <button class="settings-button hover-lift ripple" @click="$router.push('/settings')">
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
@@ -18,7 +18,7 @@
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
               </button>
-            </div>
+            </div> -->
           </div>
         </header>
 
