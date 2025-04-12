@@ -2,15 +2,15 @@
   <div class="landing-page">
     <!-- Hero Section -->
     <section class="hero" ref="heroSection">
-      <div class="hero-content">
-        <h1 class="hero-title">Super-Cool</h1>
+      <div class="hero-text">
+        <h1 class="hero-title">Smart Indirect Evaporative Cooling System</h1>
         <p class="subtitle">Sustainable cooling for a better future</p>
-        <img src="/System_Model.png" alt="Cooling System" class="hero-image" />
         <router-link to="/login" class="login-button">
           <i class="fas fa-sign-in-alt"></i>
           Access Dashboard
         </router-link>
       </div>
+      <img src="/System_Model.png" alt="Cooling System" class="hero-image" />
     </section>
 
     <!-- Feature Cards Section -->
@@ -228,15 +228,17 @@ onMounted(() => {
 
 .hero {
   min-height: 100vh;
+  min-width: max-content;
   display: flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  text-align: left;
   margin-bottom: var(--space-12);
   position: relative;
   overflow: hidden;
   background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, transparent 100%);
-  padding: var(--space-4);
+  padding: var(--space-8) var(--space-12);
 }
 
 .hero::before {
@@ -265,70 +267,60 @@ onMounted(() => {
   }
 }
 
-.hero-content {
-  max-width: 800px;
+.hero-text {
+  flex: 1;
+  max-width: 600px;
   position: relative;
   z-index: 1;
-  padding: var(--space-8);
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transform: translateY(0);
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  width: 100%;
-  margin: 0 auto;
-}
-
-.hero-content:hover {
-  transform: translateY(-10px);
 }
 
 .hero h1 {
-  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-size: clamp(2.5rem, 4.5vw, 4rem);
   margin-bottom: var(--space-4);
   background: linear-gradient(135deg, #2563eb, #3b82f6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  line-height: 1.1;
+  line-height: 1.2;
   font-weight: 800;
   letter-spacing: -0.02em;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 0 var(--space-4);
+  padding: 0;
 }
 
 .subtitle {
-  font-size: clamp(1.25rem, 2.5vw, 2rem);
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
   color: var(--text-secondary);
   margin-bottom: var(--space-8);
   font-weight: 500;
   opacity: 0.9;
-  line-height: 1.4;
-  padding: 0 var(--space-4);
+  line-height: 1.5;
+  padding: 0;
 }
 
 .hero-image {
-  max-width: 100%;
+  flex: 1;
+  max-width: 50%;
   height: auto;
+  max-height: 70vh;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
-  margin: var(--space-8) 0;
-  max-height: 60vh;
   object-fit: contain;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   transform-style: preserve-3d;
-  padding: var(--space-6);
+  padding: 0;
   position: relative;
   background: transparent;
+  border: 2px solid transparent;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .hero-image:hover {
   transform: scale(1.02);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  border-color: #3b82f6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -547,17 +539,46 @@ onMounted(() => {
   position: relative;
   overflow: hidden;
   width: fit-content;
-  margin-left: auto;
+  margin-left: 0;
   margin-right: auto;
 }
 
+.login-button:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 15px rgba(37, 99, 235, 0.2);
+}
+
 @media (max-width: 1024px) {
+  .hero {
+    flex-direction: column;
+    text-align: center;
+    padding: var(--space-8) var(--space-6);
+    min-height: auto;
+  }
+
+  .hero-text {
+    max-width: 100%;
+    order: 2;
+  }
+
+  .hero-image {
+    max-width: 80%;
+    max-height: 50vh;
+    margin-bottom: var(--space-8);
+    order: 1;
+  }
+
   .hero h1 {
-    font-size: 3.5rem;
+    font-size: clamp(2.2rem, 6vw, 3.5rem);
   }
 
   .subtitle {
-    font-size: 1.5rem;
+    font-size: clamp(1rem, 3vw, 1.3rem);
+  }
+
+  .login-button {
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .team-grid {
@@ -567,29 +588,24 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .hero {
-    min-height: 90vh;
-    padding: var(--space-4);
-  }
-
-  .hero-content {
-    padding: var(--space-6);
-    margin: var(--space-4);
+    padding: var(--space-6) var(--space-4);
   }
 
   .hero h1 {
-    font-size: 2.5rem;
+    font-size: clamp(2rem, 8vw, 3rem);
     line-height: 1.2;
     margin-bottom: var(--space-3);
   }
 
   .subtitle {
-    font-size: 1.25rem;
+    font-size: clamp(1rem, 4vw, 1.2rem);
     margin-bottom: var(--space-6);
   }
 
   .hero-image {
-    margin: var(--space-6) 0;
-    max-height: 50vh;
+    max-width: 90%;
+    max-height: 45vh;
+    margin-bottom: var(--space-6);
   }
 
   .login-button {
@@ -616,24 +632,21 @@ onMounted(() => {
 
 @media (max-width: 480px) {
   .hero {
-    min-height: 85vh;
-  }
-
-  .hero-content {
     padding: var(--space-4);
   }
 
   .hero h1 {
-    font-size: 2rem;
+    font-size: clamp(1.8rem, 10vw, 2.5rem);
   }
 
   .subtitle {
-    font-size: 1.1rem;
+    font-size: clamp(0.9rem, 5vw, 1.1rem);
   }
 
   .hero-image {
-    margin: var(--space-4) 0;
+    max-width: 100%;
     max-height: 40vh;
+    margin-bottom: var(--space-4);
   }
 }
 </style> 
