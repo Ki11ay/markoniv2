@@ -1,6 +1,54 @@
 {
   "rules": {
-    ".read": "now < 1735689600000",  
-    ".write": "now < 1735689600000"   
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "settings": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "isAlive": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "sensor1": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".validate": "newData.isNumber()"
+    },
+    "sensor2": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".validate": "newData.isNumber()"
+    },
+    "intake-humidity": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+    },
+    "outtake-humidity": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+    },
+    "dry-fan": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+    },
+    "wet-fan": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+    },
+    "pump": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".validate": "newData.isBoolean()"
+    },
+    "optimal": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      ".validate": "newData.isBoolean()"
+    }
   }
-} 
+}
