@@ -164,6 +164,12 @@ const teamMembers = [
     image: "/people/me.jpg",
     role: "Electrical & Software Specialist, Electrical & Electronic engineering Graduate",
     linkedin: "https://www.linkedin.com/in/mohamed-abubaker-baa87916a/"
+  },
+    {
+    name: "Mohamed Yousif",
+    image: "/people/me.jpg",
+    role: "Electrical & Software AI/ML Specialist , Electrical & Electronic engineering Graduate",
+    linkedin: "https://www.linkedin.com/in/mohamed-yousif-122450316/?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app"
   }
 ];
 
