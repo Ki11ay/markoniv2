@@ -1,5 +1,6 @@
 <template>
   <div 
+    v-if="loading"
     class="spinner-wrapper"
     :class="{ 'contained': contained }"
   >

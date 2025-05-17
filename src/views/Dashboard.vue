@@ -179,7 +179,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import ConnectionStatus from '../components/ConnectionStatus.vue';
 import LoadingSpinner from '../components/LoadingSpinner.vue';
 import CustomSlider from '../components/CustomSlider.vue';
@@ -197,6 +197,22 @@ const { logoutUser } = useFirebase();
 const localDryFanSpeed = ref(systemState.value.dryFanSpeed);
 const localWetFanSpeed = ref(systemState.value.wetFanSpeed);
 const isSyncing = ref(false);
+const syncTimeout = ref(null);
+
+const resetSyncState = () => {
+  isSyncing.value = false;
+  if (syncTimeout.value) {
+    clearTimeout(syncTimeout.value);
+    syncTimeout.value = null;
+  }
+};
+
+const setSyncingWithTimeout = () => {
+  resetSyncState();
+  isSyncing.value = true;
+  // Force reset syncing state after 5 seconds to prevent it getting stuck
+  syncTimeout.value = setTimeout(resetSyncState, 5000);
+};
 
 // Watch for system state changes
 watch(() => systemState.value.dryFanSpeed, (newSpeed) => {
@@ -221,7 +237,7 @@ const handleWetFanInput = (value) => {
 };
 
 const updateDryFan = async (value) => {
-  isSyncing.value = true;
+  setSyncingWithTimeout();
   try {
     await setFanSpeed('dry', value);
     localDryFanSpeed.value = value;
@@ -229,12 +245,12 @@ const updateDryFan = async (value) => {
     console.error('Failed to update dry fan:', error);
     localDryFanSpeed.value = systemState.value.dryFanSpeed;
   } finally {
-    isSyncing.value = false;
+    resetSyncState();
   }
 };
 
 const updateWetFan = async (value) => {
-  isSyncing.value = true;
+  setSyncingWithTimeout();
   try {
     await setFanSpeed('wet', value);
     localWetFanSpeed.value = value;
@@ -242,27 +258,42 @@ const updateWetFan = async (value) => {
     console.error('Failed to update wet fan:', error);
     localWetFanSpeed.value = systemState.value.wetFanSpeed;
   } finally {
-    isSyncing.value = false;
+    resetSyncState();
   }
 };
 
 // Other control methods
 const togglePump = async () => {
-  isSyncing.value = true;
-  await togglePumpState();
-  isSyncing.value = false;
+  setSyncingWithTimeout();
+  try {
+    await togglePumpState();
+  } catch (error) {
+    console.error('Failed to toggle pump:', error);
+  } finally {
+    resetSyncState();
+  }
 };
 
 const toggleOptimalMode = async () => {
-  isSyncing.value = true;
-  await setOptimalMode(!systemState.value.isOptimalMode);
-  isSyncing.value = false;
+  setSyncingWithTimeout();
+  try {
+    await setOptimalMode(!systemState.value.isOptimalMode);
+  } catch (error) {
+    console.error('Failed to toggle optimal mode:', error);
+  } finally {
+    resetSyncState();
+  }
 };
 
 const handleEmergencyStop = async () => {
-  isSyncing.value = true;
-  await emergencyStop();
-  isSyncing.value = false;
+  setSyncingWithTimeout();
+  try {
+    await emergencyStop();
+  } catch (error) {
+    console.error('Failed to execute emergency stop:', error);
+  } finally {
+    resetSyncState();
+  }
 };
 
 const handleLogout = () => logoutUser();
@@ -275,11 +306,22 @@ const exportTemperatureLog = () => {
   downloadCSV(csvContent, filename);
 };
 
-// Initialize fan speeds when component mounts
+// Cleanup function for syncing state
+const cleanup = () => {
+  if (syncTimeout.value) {
+    clearTimeout(syncTimeout.value);
+    syncTimeout.value = null;
+  }
+  isSyncing.value = false;
+};
+
+// Initialize fan speeds when component mounts and cleanup on unmount
 onMounted(() => {
   localDryFanSpeed.value = systemState.value.dryFanSpeed;
   localWetFanSpeed.value = systemState.value.wetFanSpeed;
 });
+
+onUnmounted(cleanup);
 </script>
 
 <style scoped>
